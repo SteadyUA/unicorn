@@ -34,22 +34,19 @@ class SourceCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        $repoList = $this->provider->repoList();
-        if (empty($repoList)) {
+        $config = $this->provider->config();
+        if (empty($config)) {
             $io->writeln('Source not found.');
             return self::FAILURE;
         }
 
-        $data = [];
-        foreach ($repoList as $path => $pkgInfo) {
-            $data[] = [$path, $pkgInfo['name'] ?? 'not set'];
-        }
+        $data = [[$config['path']]];
         if ($input->getOption('plain')) {
             foreach ($data as $line) {
-                echo "{$line[0]}\t{$line[1]}\n";
+                echo "{$line[0]}\n";
             }
         } else {
-            $io->table(['path', 'name'], $data);
+            $io->table(['path'], $data);
         }
 
         return self::SUCCESS;

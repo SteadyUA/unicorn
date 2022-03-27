@@ -7,7 +7,6 @@ use Composer\IO\IOInterface;
 use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
-use DirectoryIterator;
 use GlobIterator;
 
 class Plugin implements PluginInterface, Capable, CommandProvider
@@ -23,7 +22,6 @@ class Plugin implements PluginInterface, Capable, CommandProvider
         if (in_array($task, ['help', 'run', 'run-script', 'exec', 'config', 'about', 'uni:source'])) {
             return;
         }
-        $this->cleanLinks();
 
         $dm = $composer->getDownloadManager();
         $dm->setDownloader('path', new LocalPathDownloader($dm->getDownloader('path'), $io));
@@ -53,26 +51,6 @@ class Plugin implements PluginInterface, Capable, CommandProvider
         $it = new GlobIterator($composer->getConfig()->get('home') . '/repo-*');
         foreach ($it as $file) {
             unlink($file->getPathname());
-        }
-    }
-
-    public function cleanLinks()
-    {
-        $vendorDirPath = getcwd() . '/vendor';
-        if (!file_exists($vendorDirPath)) {
-            return;
-        }
-        $vendorDir = new DirectoryIterator($vendorDirPath);
-        foreach ($vendorDir as $vendorDirInfo) {
-            if ($vendorDirInfo->isDot() || false == $vendorDirInfo->isDir()) {
-                continue;
-            }
-            $dir = new DirectoryIterator($vendorDirInfo->getPathname());
-            foreach ($dir as $fileInfo) {
-                if ($fileInfo->isLink() && !file_exists($fileInfo->getPathname())) {
-                    unlink($fileInfo->getPathname());
-                }
-            }
         }
     }
 

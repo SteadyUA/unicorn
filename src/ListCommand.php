@@ -17,7 +17,7 @@ class ListCommand extends BaseCommand
     protected function configure()
     {
         $this
-            ->setName('uni:lists')
+            ->setName('uni:list')
             ->setDescription('Lists local packages.')
             ->addOption('plain', null, InputOption::VALUE_NONE, 'Simple output.')
         ;

@@ -9,8 +9,8 @@ use Composer\Repository\RepositoryManager;
 
 class Provider
 {
-    /** @var array[] */
-    private $configList;
+    /** @var array */
+    private $config = [];
 
     /** @var PathUtil */
     private $pathUtil;
@@ -18,13 +18,14 @@ class Provider
     public function __construct(string $cwd)
     {
         $this->pathUtil = new PathUtil($cwd);
-        $this->configList = [];
         $path = $cwd;
         $home = realpath(getenv('HOME') ?: getenv('USERPROFILE') ?: '/');
         while (dirname($path) !== $path && $path != $home) {
-            $composerPath = $path . '/composer.json';
-            if (file_exists($composerPath)) {
-                $this->configList[$composerPath] = (new JsonFile($composerPath))->read();
+            $unicornPath = $path . '/unicorn.json';
+            if (file_exists($unicornPath)) {
+                $this->config = (new JsonFile($unicornPath))->read();
+                $this->config['path'] = $unicornPath;
+                break;
             }
             $path = dirname($path);
         }
@@ -32,6 +33,10 @@ class Provider
 
     public function injectRepoList(RepositoryManager $rm, bool $preferDist = false)
     {
+        if (empty($this->config)) {
+            return;
+        }
+
         $existsUrlSet = [];
         foreach ($rm->getRepositories() as $repo) {
             if ($repo instanceof FilterRepository) {
@@ -42,62 +47,38 @@ class Provider
                 $existsUrlSet[$cfg['url']] = true;
             }
         }
-        $conflicts = [];
-        $options = [];
-        foreach ($this->configList as $pkgInfo) {
-            $conflicts += $this->getConflict($pkgInfo);
-            $options += $this->getExtraOptions($pkgInfo);
-        }
+        $conflicts = $this->config['conflict'] ?? [];
+        $options = $this->config['extra']['options'] ?? [];
         if (!$preferDist && isset($options['symlink']) && false == $options['symlink']) {
             $preferDist = true;
         }
         LocalPathRepository::setUp($conflicts, $options['reference'] ?? null);
         $rm->setRepositoryClass('path', LocalPathRepository::class);
 
-        foreach ($this->configList as $filePath => $pkgInfo) {
-            foreach ($this->reposFromFile($filePath, $pkgInfo) as $cfg) {
-                if (isset($existsUrlSet[$cfg['url']])) {
-                    continue;
-                }
-                $existsUrlSet[$cfg['url']] = true;
-                if ($preferDist && $cfg['type'] == 'path') {
-                    $cfg['options'] = ['symlink' => false];
-                }
-                if ($cfg['url'] == '.') {
-                    $cfg['url'] = realpath($cfg['url']);
-                }
-                $rm->prependRepository(
-                    $rm->createRepository($cfg['type'], $cfg)
-                );
+        foreach ($this->reposFromFile($this->config) as $cfg) {
+            if (isset($existsUrlSet[$cfg['url']])) {
+                continue;
             }
+            $existsUrlSet[$cfg['url']] = true;
+            if ($preferDist && $cfg['type'] == 'path') {
+                $cfg['options'] = ['symlink' => false];
+            }
+//          if ($cfg['url'] == '.') {
+//              $cfg['url'] = realpath($cfg['url']);
+//          }
+            $rm->prependRepository(
+                $rm->createRepository($cfg['type'], $cfg)
+            );
         }
     }
 
-    private function getConflict(array $pkgInfo): array
-    {
-        if (!isset($pkgInfo['conflict'])) {
-            return [];
-        }
-
-        return $pkgInfo['conflict'];
-    }
-
-    private function getExtraOptions(array $pkgInfo): array
-    {
-        if (!isset($pkgInfo['extra']['options'])) {
-            return [];
-        }
-
-        return $pkgInfo['extra']['options'];
-    }
-
-    private function reposFromFile(string $filePath, array $pkgInfo): array
+    private function reposFromFile(array $pkgInfo): array
     {
         if (!isset($pkgInfo['repositories'])) {
             return [];
         }
         $repoList = [];
-        $dirPath = dirname($filePath);
+        $dirPath = dirname($pkgInfo['path']);
         $pathUtil = new PathUtil($dirPath);
         $repoList[] = [
             'type' => 'path',
@@ -133,8 +114,8 @@ class Provider
         return $path;
     }
 
-    public function repoList(): array
+    public function config(): array
     {
-        return $this->configList;
+        return $this->config;
     }
 }
