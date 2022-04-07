@@ -4,11 +4,12 @@ namespace SteadyUa\Unicorn;
 
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Downloader\DownloaderInterface;
+use Composer\Downloader\PathDownloader;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use RuntimeException;
+use React\Promise\PromiseInterface;
 
 class LocalPathDownloader implements DownloaderInterface
 {
@@ -16,49 +17,53 @@ class LocalPathDownloader implements DownloaderInterface
     private $io;
     private $filesystem;
 
-    public function __construct(DownloaderInterface $sourceDownloader, IOInterface $io)
+    public function __construct(PathDownloader $sourceDownloader, IOInterface $io)
     {
         $this->sourceDownloader = $sourceDownloader;
-        $this->filesystem = new Filesystem(new ProcessExecutor($io));
         $this->io = $io;
+        $this->filesystem = new Filesystem( new ProcessExecutor($io));
     }
 
-    public function remove(PackageInterface $package, $path, $output = true)
+    public function remove(PackageInterface $package, $path, $output = true): PromiseInterface
     {
         if ($output) {
             $this->io->writeError("  - " . UninstallOperation::format($package));
         }
-        if (!$this->filesystem->removeDirectory($path)) {
-            throw new RuntimeException('Could not completely delete ' . $path . ', aborting.');
-        }
+        $promise = $this->filesystem->removeDirectoryAsync($path);
+
+        return $promise->then(function ($result) use ($path): void {
+            if (!$result) {
+                throw new \RuntimeException('Could not completely delete '.$path.', aborting.');
+            }
+        });
     }
 
-    public function getInstallationSource()
+    public function getInstallationSource(): string
     {
         return $this->sourceDownloader->getInstallationSource();
     }
 
-    public function download(PackageInterface $package, $path, PackageInterface $prevPackage = null)
+    public function download(PackageInterface $package, $path, PackageInterface $prevPackage = null): PromiseInterface
     {
         return $this->sourceDownloader->download($package, $path, $prevPackage);
     }
 
-    public function prepare($type, PackageInterface $package, $path, PackageInterface $prevPackage = null)
+    public function prepare($type, PackageInterface $package, $path, PackageInterface $prevPackage = null): PromiseInterface
     {
         return $this->sourceDownloader->prepare($type, $package, $path, $prevPackage);
     }
 
-    public function install(PackageInterface $package, $path)
+    public function install(PackageInterface $package, $path): PromiseInterface
     {
-        $this->sourceDownloader->install($package, $path);
+        return $this->sourceDownloader->install($package, $path);
     }
 
-    public function update(PackageInterface $initial, PackageInterface $target, $path)
+    public function update(PackageInterface $initial, PackageInterface $target, $path): PromiseInterface
     {
-        $this->sourceDownloader->update($initial, $target, $path);
+        return $this->sourceDownloader->update($initial, $target, $path);
     }
 
-    public function cleanup($type, PackageInterface $package, $path, PackageInterface $prevPackage = null)
+    public function cleanup($type, PackageInterface $package, $path, PackageInterface $prevPackage = null): PromiseInterface
     {
         return $this->sourceDownloader->cleanup($type, $package, $path, $prevPackage);
     }
