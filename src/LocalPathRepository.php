@@ -18,11 +18,6 @@ class LocalPathRepository extends PathRepository
         self::$reference = $reference;
     }
 
-    protected function initialize()
-    {
-        parent::initialize();
-    }
-
     /**
      * @param PackageInterface&Package $package
      * @return void
