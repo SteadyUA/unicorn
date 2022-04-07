@@ -1,6 +1,5 @@
 {
     "name": "steady-ua/unicorn",
-    "version": "1.0.0",
     "type": "composer-plugin",
     "description": "Composer monorepo plugin",
     "license": "MIT",
