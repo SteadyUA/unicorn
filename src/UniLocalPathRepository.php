@@ -6,7 +6,7 @@ use Composer\Package\Package;
 use Composer\Package\PackageInterface;
 use Composer\Repository\PathRepository;
 
-class LocalPathRepository extends PathRepository
+class UniLocalPathRepository extends PathRepository
 {
     /**
      * @param PackageInterface&Package $package
@@ -14,9 +14,11 @@ class LocalPathRepository extends PathRepository
      */
     public function addPackage(PackageInterface $package)
     {
-        $package->setDistReference(
-            sha1_file($package->getDistUrl() . '/composer.json')
-        );
+        $requires = $package->getRequires();
+        foreach ($package->getDevRequires() as $target => $link) {
+            $requires[$target] = $link;
+        }
+        $package->setRequires($requires);
 
         parent::addPackage($package);
     }

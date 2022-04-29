@@ -56,6 +56,7 @@ class PathUtil
         }
         $pathParts = explode('/', realpath($absPath));
         $cwdParts = explode('/', $this->cwd);
+
         $pathCount = count($pathParts);
         $cwdCount = count($cwdParts);
         $matched = 0;

@@ -2,10 +2,23 @@
 
 namespace SteadyUa\Unicorn;
 
+use Composer\Composer;
+use Composer\DependencyResolver\Request;
+use Composer\Factory;
+use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
+use Composer\Installer;
+use Composer\IO\BufferIO;
+use Composer\IO\IOInterface;
+use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
-use Composer\Repository\ConfigurableRepositoryInterface;
-use Composer\Repository\FilterRepository;
-use Composer\Repository\RepositoryManager;
+use Composer\Package\Loader\ArrayLoader;
+use Composer\Package\Locker;
+use Composer\Package\PackageInterface;
+use Composer\Package\Version\VersionParser;
+use Composer\Repository\CompositeRepository;
+use Composer\Repository\InstalledRepository;
+use Composer\Util\Platform;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class Provider
 {
@@ -15,7 +28,13 @@ class Provider
     /** @var PathUtil */
     private $pathUtil;
 
-    public function __construct(string $cwd)
+    /** @var Composer */
+    private $uniComposer;
+
+    /** @var Composer  */
+    private $composer;
+
+    public function __construct(string $cwd, Composer $composer)
     {
         $this->pathUtil = new PathUtil($cwd);
         $path = $cwd;
@@ -29,47 +48,231 @@ class Provider
             }
             $path = dirname($path);
         }
+        $this->composer = $composer;
     }
 
-    public function injectRepoList(RepositoryManager $rm, bool $preferDist = false)
+    public function getDir(): string
+    {
+        return dirname($this->config['path']);
+    }
+
+    private function injectUniRepo()
     {
         if (empty($this->config)) {
             return;
         }
 
-        $existsUrlSet = [];
-        foreach ($rm->getRepositories() as $repo) {
-            if ($repo instanceof FilterRepository) {
-                $repo = $repo->getRepository();
-            }
-            if ($repo instanceof ConfigurableRepositoryInterface) {
-                $cfg = $repo->getRepoConfig();
-                $existsUrlSet[$cfg['url']] = true;
-            }
-        }
-        $conflicts = $this->config['conflict'] ?? [];
-        $options = $this->config['extra']['options'] ?? [];
-        if (!$preferDist && isset($options['symlink']) && false == $options['symlink']) {
-            $preferDist = true;
-        }
-        LocalPathRepository::setUp($conflicts, $options['reference'] ?? null);
-        $rm->setRepositoryClass('path', LocalPathRepository::class);
+        $uniRepoCfg = [
+            'type' => 'path',
+            'url' => $this->relative($this->getDir() . '/uni_vendor/*/*'),
+            'options' => ['versions' => [], 'reference' => 'config'],
+        ];
 
-        foreach ($this->reposFromFile($this->config) as $cfg) {
-            if (isset($existsUrlSet[$cfg['url']])) {
-                continue;
-            }
-            $existsUrlSet[$cfg['url']] = true;
-            if ($preferDist && $cfg['type'] == 'path') {
-                $cfg['options'] = ['symlink' => false];
-            }
-//          if ($cfg['url'] == '.') {
-//              $cfg['url'] = realpath($cfg['url']);
-//          }
-            $rm->prependRepository(
-                $rm->createRepository($cfg['type'], $cfg)
-            );
+        $installedInfo = (new JsonFile($this->getDir() . '/uni_vendor/composer/installed.json'))->read();
+        foreach ($installedInfo['packages'] as $package) {
+            $uniRepoCfg['options']['versions'][$package['name']] = $package['version'];
         }
+        if (Platform::getEnv('UNI_COPY')) {
+            $uniRepoCfg['options']['symlink'] = false;
+        }
+
+        $rm = $this->composer->getRepositoryManager();
+        $rm->setRepositoryClass('path', LocalPathRepository::class);
+        $rm->prependRepository(
+            $rm->createRepository($uniRepoCfg['type'], $uniRepoCfg)
+        );
+    }
+
+    private function changeDir(string $dir): string
+    {
+        $cwd = getcwd();
+        $this->pathUtil = new PathUtil($dir);
+        chdir($dir);
+
+        return $cwd;
+    }
+
+    public function setupUniComposer(IOInterface $io): void
+    {
+        $currentPackageName = $this->composer->getPackage()->getName();
+        $isRoot = $currentPackageName == '__root__';
+        if (!$isRoot && !$this->localRepo()->findPackage($currentPackageName, '*')) {
+            return;
+        }
+
+        if (!isset($_SERVER['backup_composer']) && file_exists('composer.json')) {
+            $_SERVER['backup_composer'] = file_get_contents('composer.json');
+        }
+
+        $this->uniComposer = null;
+        $cwd = $this->changeDir($uniDir = $this->getDir());
+        if ($io->isVerbose()) {
+            $io->write(" \xf0\x9f\xa6\x84 <info> initialization: $uniDir</info>");
+        }
+        $verbose = $io->isVerbose()
+            ? OutputInterface::VERBOSITY_VERBOSE
+            : ($io->isVeryVerbose() ? OutputInterface::VERBOSITY_VERY_VERBOSE : OutputInterface::VERBOSITY_NORMAL);
+        $uniIo = new BufferIO('', $verbose);
+        $uniComposer = $this->uniComposer($uniIo);
+
+        $isLocked = $uniComposer->getLocker()->isLocked();
+        $isFresh = $uniComposer->getLocker()->isFresh();
+        $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
+
+        if (!$isLocked || !$isFresh || !$vendorExists) {
+            // refresh
+            $install = Installer::create($uniIo, $uniComposer);
+            $install
+                ->disablePlugins()
+                ->setDevMode(true)
+                ->setDumpAutoloader(false)
+                ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::ignoreNothing())
+            ;
+
+            if (!$isLocked) {
+                $install->setUpdate(true);
+            } elseif (!$isFresh) {
+                $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
+                $localRepo = $this->localRepo();
+                $updateList = [];
+                foreach ($localRepo->getPackages() as $package) {
+                    $lockedPackage = $lockedRepo->findPackage($package->getName(), '*');
+                    if (!isset($lockedPackage) || $lockedPackage->getDistReference() !== $package->getDistReference()) {
+                        $updateList[] = $package->getName();
+                    }
+                }
+                $install
+                    ->setUpdate(true)
+                    ->setUpdateAllowList($updateList)
+                    ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE)
+                ;
+            }
+
+            if ($install->run()) {
+                $io->writeError(" \xf0\x9f\xa6\x84 <error> dependencies error </error>");
+                $io->writeError($uniIo->getOutput());
+                $this->changeDir($cwd);
+                if (isset($_SERVER['backup_composer'])
+                    && file_get_contents('composer.json') !== $_SERVER['backup_composer']
+                ) {
+                    $io->writeError('<error> Reverting composer.json original content. </error>');
+                    file_put_contents('composer.json', $_SERVER['backup_composer']);
+                }
+                exit(1);
+            } elseif ($io->isVerbose()) {
+                $io->writeError($uniIo->getOutput());
+            }
+        } elseif ($io->isVerbose()) {
+            $io->write('    <info> Nothing to install, update or remove </info>');
+        }
+
+        $this->changeDir($cwd);
+
+        if (!$isRoot) {
+            $dm = $this->composer->getDownloadManager();
+            $dm->setDownloader('path', new LocalPathDownloader($dm->getDownloader('path'), $io));
+            $this->injectUniRepo();
+        }
+    }
+
+    public function uniComposer(IOInterface $io = null): Composer
+    {
+        if (isset($this->uniComposer)) {
+            return $this->uniComposer;
+        }
+
+        $io = $io ?? new NullIO();
+
+        $unicornDir = $this->getDir();
+        $uniConfig = [
+            'name' => 'local/unicorn',
+            'type' => 'metapackage',
+            'require' => [],
+            'config' => [
+                'vendor-dir' => $unicornDir . '/uni_vendor',
+            ],
+        ];
+        $composer = (new Factory())->createComposer($io, $uniConfig, true, $unicornDir);
+
+        // init repos
+        $rm = $composer->getRepositoryManager();
+        $rm->setRepositoryClass('path', UniLocalPathRepository::class);
+        $requires = [];
+        $references = [];
+        foreach ($this->reposFromFile($this->config) as $cfg) {
+            $rm->addRepository(
+                $repo = $rm->createRepository($cfg['type'], $cfg)
+            );
+            if ($cfg['type'] == 'path') {
+                foreach ($repo->getPackages() as $package) {
+                    if (isset($package->getExtra()['uni_exclude'])) {
+                        continue;
+                    }
+                    $requires[$package->getName()] = $package->getVersion();
+                    $references[$package->getName()] = $package->getDistReference();
+                }
+            }
+        }
+
+        // init locker
+        $lockFile = new JsonFile($unicornDir . '/unicorn.lock', null, $io);
+        $locker = new UniLocker(
+            $io,
+            $lockFile,
+            $composer->getInstallationManager(),
+            '{"extra": { "options": {'
+                . implode(
+                    ', ',
+                    array_map(
+                        function ($key, $value) {
+                            return '"' . $key . '": "' . $value . '"';
+                        },
+                        array_keys($references),
+                        array_values($references)
+                    )
+                )
+                . '}}}',
+            $composer->getLoop()->getProcessExecutor()
+        );
+        $composer->setLocker($locker);
+        $dm = $composer->getDownloadManager();
+        $dm->setDownloader('path', new LocalPathDownloader($dm->getDownloader('path'), $io));
+
+        // inject requires
+        $uniPackage = $composer->getPackage();
+        $links = (new ArrayLoader())->parseLinks(
+            $uniPackage->getName(),
+            $uniPackage->getPrettyVersion(),
+            'requires',
+            $requires
+        );
+        $uniPackage->setRequires($links);
+
+        return $this->uniComposer = $composer;
+    }
+
+    public function localRepo(): CompositeRepository
+    {
+        static $repo;
+        if (isset($repo)) {
+            return $repo;
+        }
+
+        $rm = $this->composer->getRepositoryManager();
+        $repo = new CompositeRepository([]);
+        foreach ($this->reposFromFile($this->config) as $cfg) {
+            if ($cfg['type'] == 'path') {
+                $pathRepo = $rm->createRepository($cfg['type'], $cfg);
+                foreach ($pathRepo->getPackages() as $package) {
+                    if (isset($package->getExtra()['uni_exclude'])) {
+                        $pathRepo->removePackage($package);
+                    }
+                }
+                $repo->addRepository($pathRepo);
+            }
+        }
+
+        return $repo;
     }
 
     private function reposFromFile(array $pkgInfo): array
@@ -78,17 +281,12 @@ class Provider
             return [];
         }
         $repoList = [];
-        $dirPath = dirname($pkgInfo['path']);
+        $dirPath = $dirPath ?? dirname($pkgInfo['path']);
         $pathUtil = new PathUtil($dirPath);
-        $repoList[] = [
-            'type' => 'path',
-            'url' => $this->relative($dirPath)
-        ];
         foreach ($pkgInfo['repositories'] as $repo) {
+            $repo['options']['reference'] = 'config';
             if ($repo['type'] == 'path' && PathUtil::isRelative($repo['url'])) {
-                $repo['url'] = $this->relative(
-                    $pathUtil->absolute($repo['url'])
-                );
+                $repo['url'] = $this->relative($pathUtil->absolute($repo['url']));
             }
             $repoList[] = $repo;
         }
@@ -96,8 +294,11 @@ class Provider
         return array_reverse($repoList);
     }
 
-    private function relative(string $url): string
+    public function relative(string $url, bool $fromRoot = false): string
     {
+        if ($fromRoot) {
+            $url = realpath($this->getDir() . '/' . $url);
+        }
         $path = $url;
         $pos = strpos($url, '/*');
         if ($pos) {
@@ -117,5 +318,78 @@ class Provider
     public function config(): array
     {
         return $this->config;
+    }
+
+    public function getScripts(): array
+    {
+        return $this->config['scripts'] ?? [];
+    }
+
+    public function composer(): Composer
+    {
+        return $this->composer;
+    }
+
+    private function processDepsResults(array $results): array
+    {
+        $depends = [];
+        while (!empty($results)) {
+            $queue = [];
+            foreach ($results as $result) {
+                [$depPkg, , $children] = $result;
+                if (!isset($depends[$depPkg->getName()])) {
+                    $depends[$depPkg->getName()] = $this->localRepo()->findPackage($depPkg->getName(), '*');
+                }
+                if ($children) {
+                    $queue = array_merge($queue, $children);
+                }
+            }
+            $results = $queue;
+        }
+
+        return $depends;
+    }
+
+    /**
+     * @param PackageInterface $package
+     * @param string $constraint
+     * @param bool $recursive
+     * @return array<string, PackageInterface>
+     */
+    public function getProhibits(PackageInterface $package, string $constraint, bool $recursive = false): array
+    {
+        $installedRepo = new InstalledRepository(
+            [$this->uniComposer()->getRepositoryManager()->getLocalRepository()]
+        );
+        $needle = $package->getName();
+        $results = $installedRepo->getDependents(
+            [$needle],
+            (new VersionParser())->parseConstraints($constraint),
+            true,
+            $recursive
+        );
+
+        return $this->processDepsResults($results);
+    }
+
+    /**
+     * @param PackageInterface $package
+     * @param bool $recursive
+     * @return array<string, PackageInterface>
+     */
+    public function getDepends(PackageInterface $package, bool $recursive = false): array
+    {
+        $installedRepo = new InstalledRepository(
+            [$this->uniComposer()->getRepositoryManager()->getLocalRepository()]
+        );
+        $needle = $package->getName();
+        $results = $installedRepo->getDependents(
+            [$needle],
+            null,
+            false,
+            $recursive
+        );
+
+        return $this->processDepsResults($results);
     }
 }
