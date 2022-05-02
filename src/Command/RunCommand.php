@@ -31,7 +31,7 @@ class RunCommand extends BaseCommand
                 [
                     new InputArgument(
                         'script',
-                        InputArgument::IS_ARRAY | InputArgument::REQUIRED,
+                        InputArgument::IS_ARRAY,
                         'Script name to run.'
                     ),
                     new InputOption('self', 's', InputOption::VALUE_NONE, 'Also run script for the current package.'),
@@ -80,8 +80,13 @@ class RunCommand extends BaseCommand
             return $this->listScripts($utils, $depends);
         }
 
+        $scripts = $input->getArgument('script');
+        if (empty($scripts)) {
+            throw new \InvalidArgumentException('script argument not specified.');
+        }
+
         return $utils->runScripts(
-            $input->getArgument('script'),
+            $scripts,
             $depends
         );
     }
