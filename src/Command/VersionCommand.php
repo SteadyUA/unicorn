@@ -96,7 +96,7 @@ class VersionCommand extends BaseCommand
             ->setNext($updateCmd)
             ->setNext($installCmd)
         ;
-        $scripts = $this->provider->getScripts()['post-install'] ?? [];
+        $scripts = $this->provider->getPostUpdateScripts();
         if ($scripts) {
             $installCmd->setNext(
                 new RunScriptsCmd($utils, $scripts, $install)

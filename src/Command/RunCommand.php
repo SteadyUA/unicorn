@@ -3,6 +3,7 @@
 namespace SteadyUa\Unicorn\Command;
 
 use Composer\Command\BaseCommand;
+use Composer\Package\CompletePackageInterface;
 use SteadyUa\Unicorn\Provider;
 use SteadyUa\Unicorn\Utils;
 use Symfony\Component\Console\Input\InputArgument;
@@ -25,10 +26,14 @@ class RunCommand extends BaseCommand
         $this
             ->setName('uni:run-script')
             ->setAliases(['uni:run'])
-            ->setDescription('Runs the scripts defined in unicorn.json, for all packages dependent on the current.')
+            ->setDescription('Runs the scripts defined in composer.json, for all packages dependent on the current.')
             ->setDefinition(
                 [
-                    new InputArgument('script', InputArgument::IS_ARRAY, 'Script name to run.'),
+                    new InputArgument(
+                        'script',
+                        InputArgument::IS_ARRAY | InputArgument::REQUIRED,
+                        'Script name to run.'
+                    ),
                     new InputOption('self', 's', InputOption::VALUE_NONE, 'Also run script for the current package.'),
                     new InputOption(
                         'recursive',
@@ -46,26 +51,8 @@ class RunCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $utils = new Utils($this->getIO(), $output);
-        if ($input->getOption('list')) {
-            return $this->listScripts($utils);
-        }
 
         $localRepo = $this->provider->localRepo();
-        $scriptArg = $input->getArgument('script');
-        if (empty($scriptArg)) {
-            throw new \InvalidArgumentException('script argument not specified.');
-        }
-        $runScripts = [];
-        foreach ($scriptArg as $scenario) {
-            $list = $this->provider->getScripts()[$scenario] ?? null;
-            if (!isset($list)) {
-                $output->writeln($scenario . ' - not found in unicorn.json');
-                return self::FAILURE;
-            }
-            $runScripts = array_merge($runScripts, $list);
-        }
-        $runScripts = array_unique($runScripts);
-
         $depends = [];
         if ($input->getOption('all')) {
             foreach ($localRepo->getPackages() as $package) {
@@ -89,24 +76,42 @@ class RunCommand extends BaseCommand
                 $depends[$package->getName()] = $package;
             }
         }
+        if ($input->getOption('list')) {
+            return $this->listScripts($utils, $depends);
+        }
 
-        return $utils->runScripts($runScripts, $depends);
+        return $utils->runScripts(
+            $input->getArgument('script'),
+            $depends
+        );
     }
 
-    protected function listScripts(Utils $utils): int
+    /**
+     * @param Utils $utils
+     * @param CompletePackageInterface[] $depends
+     * @return int
+     */
+    protected function listScripts(Utils $utils, array $depends): int
     {
-        $scripts = $this->provider->getScripts();
-
-        if (!count($scripts)) {
+        $exists = [];
+        foreach ($depends as $pkgName => $package) {
+            $scripts = $package->getScripts();
+            foreach ($scripts as $name => $void) {
+                if (!isset($exists[$name])) {
+                    $exists[$name] = [];
+                }
+                $exists[$name][] = $package->getName();
+            }
+        }
+        if (!count($exists)) {
             return 0;
         }
 
         $io = $this->getIO();
         $io->writeError('<info>scripts:</info>');
         $rows = [];
-        foreach ($scripts as $name => $list) {
-            $description = '["' . implode('", "', $list) . '"]';
-            $rows[] = ['  ' . $name, $description];
+        foreach ($exists as $name => $list) {
+            $rows[] = ['  ' . $name, implode(', ', $list)];
         }
 
         $table = $utils->table();

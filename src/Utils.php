@@ -88,7 +88,7 @@ class Utils
         return !empty($errors) ? 1 : 0;
     }
     
-    public function install(array $packages, bool $isForce): int
+    public function install(array $packages, bool $isForce, string $options = ''): int
     {
         $promises = [];
         $process = new ProcessExecutor($this->io);
@@ -97,7 +97,7 @@ class Utils
         foreach ($packages as $package) {
             $pkgDir = $package->getDistUrl();
             $cmd = $isForce ? 'rm -rf vendor composer.lock && ' : '';
-            $cmd .= 'composer install -n --no-scripts';
+            $cmd .= 'composer install -n ' . $options;
             $promises[] = $process->executeAsync($cmd, $pkgDir)->then(
                 function (Process $process) use (&$errors, $package) {
                     if ($process->getExitCode() > 0) {

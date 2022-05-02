@@ -45,6 +45,12 @@ class InstallCommand extends BaseCommand
                     InputOption::VALUE_NONE,
                     'Packages will be copied instead of symlinks.'
                 ),
+                new InputOption(
+                    'no-scripts',
+                    null,
+                    InputOption::VALUE_NONE,
+                    'Whether to prevent execution of all defined scripts.'
+                ),
             ])
         ;
     }
@@ -80,12 +86,17 @@ class InstallCommand extends BaseCommand
             $output->writeln('<info>Clean vendors and locks</info>');
         }
 
+        $installOptions = '';
         if ($input->getOption(self::OPTION_COPY)) {
             Platform::putEnv('UNI_COPY', '1');
+            $installOptions = $this->provider->getCopyInstallOptions();
+        }
+        if ($input->getOption('no-scripts')) {
+            $installOptions .= ' --no-scripts';
         }
         $utils = new Utils($this->getIO(), $output);
 
-        return $utils->install($packages, $isForce);
+        return $utils->install($packages, $isForce, $installOptions);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)

@@ -91,7 +91,7 @@ class UpdateCommand extends BaseCommand
         $tryInstallCmd = new ReqTryInstallCmd();
         $installCmd = new InstallCmd($utils, $install);
 
-        $scripts = $this->provider->getScripts()['post-install'] ?? [];
+        $scripts = $this->provider->getPostUpdateScripts();
         if ($scripts) {
             $installCmd->setNext(new RunScriptsCmd($utils, $scripts, $install));
         }

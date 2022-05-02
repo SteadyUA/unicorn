@@ -320,9 +320,19 @@ class Provider
         return $this->config;
     }
 
-    public function getScripts(): array
+    public function getCopyInstallOptions(): string
     {
-        return $this->config['scripts'] ?? [];
+        return $this->config['extra']['copy-install-options'] ?? '';
+    }
+
+    public function getPostUpdateScripts(): array
+    {
+        $scripts = $this->config['extra']['post-update-scripts'] ?? [];
+        if (is_string($scripts)) {
+            return [$scripts];
+        }
+
+        return $scripts;
     }
 
     public function composer(): Composer
