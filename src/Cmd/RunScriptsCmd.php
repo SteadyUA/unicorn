@@ -22,7 +22,7 @@ class RunScriptsCmd extends AbstractCmd
     public function exec(IOInterface $io): void
     {
         $names = implode(' ', $this->scripts);
-        $io->write('<info>runing scripts (post-install):</info> ' . $names);
+        $io->write('<info>runing scripts (post-update-scripts):</info> ' . $names);
         $res = $this->utils->runScripts($this->scripts, $this->packages);
         if ($res > 0) {
             throw new RuntimeException('scripts failed', -1);
