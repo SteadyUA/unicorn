@@ -112,12 +112,12 @@ You can specify a list of local packages. In this case, for each package, the co
 `composer install`
 
 #### Options:
-- `-f, --force` Cleanup vendors and locks before install.
 - `-a, --all` Run command for all local packages.
 - `--copy` Packages will be copied instead of symlinks.\
 Only allowed when packages are specified.\
 It is [possible to set options](#copy-install-options) for executing the command `composer install`
 Useful for deployment.
+- `--no-scripts` Whether to prevent execution of all defined scripts.
 
 ### composer uni:update
 

@@ -37,7 +37,6 @@ class InstallCommand extends BaseCommand
                     InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
                     'Optional package name'
                 ),
-                new InputOption(self::OPTION_FORCE, 'f', InputOption::VALUE_NONE, 'Cleanup vendors and locks.'),
                 new InputOption(self::OPTION_ALL, 'a', InputOption::VALUE_NONE, 'Run install for all local packages.'),
                 new InputOption(
                     self::OPTION_COPY,
@@ -80,10 +79,11 @@ class InstallCommand extends BaseCommand
             return self::SUCCESS;
         }
 
-        $isForce = $input->getOption(self::OPTION_FORCE);
         $output->writeln('<info>Packages: ' . count($packages) . '</info>');
-        if ($isForce) {
-            $output->writeln('<info>Clean vendors and locks</info>');
+        if ($output->isVerbose()) {
+            foreach ($packages as $package) {
+                $output->writeln($package->getName() . "\t" . $package->getDistUrl());
+            }
         }
 
         $installOptions = '';
@@ -96,7 +96,7 @@ class InstallCommand extends BaseCommand
         }
         $utils = new Utils($this->getIO(), $output);
 
-        return $utils->install($packages, $isForce, $installOptions);
+        return $utils->install($packages, $installOptions);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)

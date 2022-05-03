@@ -32,7 +32,7 @@ class InstallCmd extends AbstractCmd
     public function exec(IOInterface $io): void
     {
         $io->write('<info>installing packages:</info> ' . $this->names);
-        $res = $this->utils->install($this->packages, true);
+        $res = $this->utils->install($this->packages);
         if ($res > 0) {
             throw new RuntimeException('installing failed', -1);
         }
@@ -43,7 +43,7 @@ class InstallCmd extends AbstractCmd
     public function undo(IOInterface $io): void
     {
         $io->write('<info>installing after rollback</info> ');
-        $res = $this->utils->install($this->packages, true);
+        $res = $this->utils->install($this->packages);
         if ($res > 0) {
             throw new RuntimeException('installing after rollback failed', -2);
         }

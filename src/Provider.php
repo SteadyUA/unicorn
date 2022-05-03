@@ -160,7 +160,20 @@ class Provider
                 }
                 exit(1);
             } elseif ($io->isVerbose()) {
-                $io->writeError($uniIo->getOutput());
+                $output = array_filter(
+                    preg_split("/[\n\r]+/", $uniIo->getOutput()),
+                    function ($line) {
+                        if (preg_match('/Dependency .+ root dependencies/', $line)
+                            || preg_match('/Package .+ is abandoned/', $line)
+                            || strpos($line, 'looking for funding')
+                            || strpos($line, 'composer fund')
+                        ) {
+                            return false;
+                        }
+                        return true;
+                    }
+                );
+                $io->writeError($output);
             }
         } elseif ($io->isVerbose()) {
             $io->write('    <info> Nothing to install, update or remove </info>');
