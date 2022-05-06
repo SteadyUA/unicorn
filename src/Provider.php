@@ -131,7 +131,7 @@ class Provider
 
             if (!$isLocked) {
                 $install->setUpdate(true);
-            } elseif (!$isFresh) {
+            } elseif (!$isFresh && $vendorExists) {
                 $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
                 $localRepo = $this->localRepo();
                 $updateList = [];
@@ -141,11 +141,15 @@ class Provider
                         $updateList[] = $package->getName();
                     }
                 }
-                $install
-                    ->setUpdate(true)
-                    ->setUpdateAllowList($updateList)
-                    ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE)
-                ;
+                if ($updateList) {
+                    $install
+                        ->setUpdate(true)
+                        ->setUpdateAllowList($updateList)
+                        ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE)
+                    ;
+                } else {
+                    $uniComposer->getLocker()->writeHash();
+                }
             }
 
             if ($install->run()) {
@@ -174,6 +178,9 @@ class Provider
                     }
                 );
                 $io->writeError($output);
+            }
+            if (!$vendorExists) {
+                $uniComposer->getLocker()->writeHash();
             }
         } elseif ($io->isVerbose()) {
             $io->write('    <info> Nothing to install, update or remove </info>');

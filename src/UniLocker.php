@@ -34,6 +34,15 @@ class UniLocker extends Locker
         return $this->contentHash == $this->lockContentHash;
     }
 
+    public function writeHash()
+    {
+        $uniDir = dirname($this->contentHashFile);
+        if (!file_exists($uniDir)) {
+            mkdir($uniDir);
+        }
+        file_put_contents($this->contentHashFile, $this->contentHash);
+    }
+
     public function setLockData(
         array $packages,
         ?array $devPackages,
@@ -47,11 +56,7 @@ class UniLocker extends Locker
         array $platformOverrides,
         bool $write = true
     ): bool {
-        $uniDir = dirname($this->contentHashFile);
-        if (!file_exists($uniDir)) {
-            mkdir($uniDir);
-        }
-        file_put_contents($this->contentHashFile, $this->contentHash);
+        $this->writeHash();
         $lockerClass = new \ReflectionClass(Locker::class);
         $contentHashProperty = $lockerClass->getProperty('contentHash');
         $contentHashProperty->setAccessible(true);
