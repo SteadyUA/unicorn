@@ -125,7 +125,7 @@ class Provider
             $install
                 ->disablePlugins()
                 ->setDevMode(true)
-                ->setDumpAutoloader(false)
+                ->setDumpAutoloader(true)
                 ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::ignoreNothing())
             ;
 
