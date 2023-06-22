@@ -10,9 +10,9 @@ use Composer\Util\ProcessExecutor;
 
 class UniLocker extends Locker
 {
-    private $contentHash;
-    private $lockContentHash = '';
-    private $contentHashFile;
+    private string $contentHash;
+    private string $lockContentHash = '';
+    private string $contentHashFile;
 
     public function __construct(
         IOInterface $io,

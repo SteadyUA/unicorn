@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RunCommand extends BaseCommand
 {
-    private $provider;
+    private Provider $provider;
 
     public function __construct(Provider $provider)
     {
@@ -24,8 +24,7 @@ class RunCommand extends BaseCommand
     protected function configure()
     {
         $this
-            ->setName('uni:run-script')
-            ->setAliases(['uni:run'])
+            ->setName('uni:run')
             ->setDescription('Runs the scripts defined in composer.json, for all packages dependent on the current.')
             ->setDefinition(
                 [

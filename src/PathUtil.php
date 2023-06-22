@@ -4,7 +4,7 @@ namespace SteadyUa\Unicorn;
 
 class PathUtil
 {
-    private $cwd;
+    private string $cwd;
 
     public function __construct(string $cwd)
     {

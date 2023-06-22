@@ -5,7 +5,7 @@ namespace SteadyUa\Unicorn;
 class Version
 {
     /** @var string[] */
-    private $ver;
+    private array $ver;
 
     public function __construct(string $version)
     {

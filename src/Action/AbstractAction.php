@@ -1,15 +1,14 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use Throwable;
 
-abstract class AbstractCmd
+abstract class AbstractAction
 {
-    /** @var AbstractCmd|null  */
-    protected $next = null;
+    protected ?AbstractAction $next = null;
 
     public function exec(IOInterface $io): void
     {
@@ -25,13 +24,13 @@ abstract class AbstractCmd
         }
     }
 
-    public static function emptyCmd(): AbstractCmd
+    public static function emptyCmd(): AbstractAction
     {
-        return new class extends AbstractCmd {
+        return new class extends AbstractAction {
         };
     }
 
-    public static function runCmd(AbstractCmd $cmd, IOInterface $io): int
+    public static function runCmd(AbstractAction $cmd, IOInterface $io): int
     {
         try {
             $cmd->exec($io);
@@ -49,7 +48,7 @@ abstract class AbstractCmd
         return true;
     }
 
-    public function setNext(AbstractCmd $next): AbstractCmd
+    public function setNext(AbstractAction $next): AbstractAction
     {
         $this->next = $next;
 

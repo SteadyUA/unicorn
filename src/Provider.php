@@ -12,7 +12,6 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Package\Loader\ArrayLoader;
-use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\CompositeRepository;
@@ -22,33 +21,39 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Provider
 {
-    /** @var array */
-    private $config = [];
-
-    /** @var PathUtil */
-    private $pathUtil;
-
-    /** @var Composer */
-    private $uniComposer;
-
-    /** @var Composer  */
-    private $composer;
+    private array $config = [];
+    private PathUtil $pathUtil;
+    private ?Composer $uniComposer;
+    private Composer $composer;
 
     public function __construct(string $cwd, Composer $composer)
     {
+        $this->composer = $composer;
         $this->pathUtil = new PathUtil($cwd);
+        $unicornJsonFile = $this->findUnicornJsonFile($cwd);
+        if ($unicornJsonFile) {
+            $this->config = (new JsonFile($unicornJsonFile))->read();
+            $this->config['path'] = $unicornJsonFile;
+        }
+    }
+
+    private function findUnicornJsonFile(string $cwd): ?string
+    {
+        $path = Platform::getEnv('UNI_PATH');
+        if ($path && file_exists($path)) {
+            return $path;
+        }
         $path = $cwd;
         $home = realpath(getenv('HOME') ?: getenv('USERPROFILE') ?: '/');
         while (dirname($path) !== $path && $path != $home) {
-            $unicornPath = $path . '/unicorn.json';
-            if (file_exists($unicornPath)) {
-                $this->config = (new JsonFile($unicornPath))->read();
-                $this->config['path'] = $unicornPath;
-                break;
+            $unicornJsonFile = $path . '/unicorn.json';
+            if (file_exists($unicornJsonFile)) {
+                return $unicornJsonFile;
             }
             $path = dirname($path);
         }
-        $this->composer = $composer;
+
+        return null;
     }
 
     public function getDir(): string
@@ -65,14 +70,14 @@ class Provider
         $uniRepoCfg = [
             'type' => 'path',
             'url' => $this->relative($this->getDir() . '/uni_vendor/*/*'),
-            'options' => ['versions' => [], 'reference' => 'config'],
+            'options' => ['versions' => []],
         ];
 
         $installedInfo = (new JsonFile($this->getDir() . '/uni_vendor/composer/installed.json'))->read();
         foreach ($installedInfo['packages'] as $package) {
             $uniRepoCfg['options']['versions'][$package['name']] = $package['version'];
         }
-        if (Platform::getEnv('UNI_COPY')) {
+        if (Platform::getEnv('UNI_BUILD')) {
             $uniRepoCfg['options']['symlink'] = false;
         }
 
@@ -124,8 +129,8 @@ class Provider
             $install = Installer::create($uniIo, $uniComposer);
             $install
                 ->disablePlugins()
-                ->setDevMode(true)
-                ->setDumpAutoloader(true)
+                ->setDevMode()
+                ->setDumpAutoloader()
                 ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::ignoreNothing())
             ;
 
@@ -145,7 +150,7 @@ class Provider
                     $install
                         ->setUpdate(true)
                         ->setUpdateAllowList($updateList)
-                        ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE)
+                        ->setUpdateAllowTransitiveDependencies(Request::UPDATE_ONLY_LISTED)
                     ;
                 } else {
                     $uniComposer->getLocker()->writeHash();
@@ -153,7 +158,7 @@ class Provider
             }
 
             if ($install->run()) {
-                $io->writeError(" \xf0\x9f\xa6\x84 <error> dependencies error </error>");
+                $io->writeError(" \xf0\x9f\xa6\x84 <error> Dependency error </error>");
                 $io->writeError($uniIo->getOutput());
                 $this->changeDir($cwd);
                 if (isset($_SERVER['backup_composer'])
@@ -280,6 +285,7 @@ class Provider
 
         $rm = $this->composer->getRepositoryManager();
         $repo = new CompositeRepository([]);
+
         foreach ($this->reposFromFile($this->config) as $cfg) {
             if ($cfg['type'] == 'path') {
                 $pathRepo = $rm->createRepository($cfg['type'], $cfg);
@@ -335,14 +341,14 @@ class Provider
         return $path;
     }
 
-    public function config(): array
+    public function isActive(): bool
     {
-        return $this->config;
+        return !empty($this->config);
     }
 
-    public function getCopyInstallOptions(): string
+    public function getBuildInstallOptions(): string
     {
-        return $this->config['extra']['copy-install-options'] ?? '';
+        return $this->config['extra']['build-install-options'] ?? '';
     }
 
     public function getPostUpdateScripts(): array
@@ -421,5 +427,10 @@ class Provider
         );
 
         return $this->processDepsResults($results);
+    }
+
+    public function unicornJsonFile(): ?string
+    {
+        return $this->config['path'] ?? null;
     }
 }

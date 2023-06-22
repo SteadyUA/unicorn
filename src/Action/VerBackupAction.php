@@ -1,13 +1,13 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 
-class VerBackupCmd extends AbstractCmd
+class VerBackupAction extends AbstractAction
 {
-    private $backup;
+    private FileBackup $backup;
 
     public function __construct(
         PackageInterface $package,

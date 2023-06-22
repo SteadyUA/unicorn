@@ -2,19 +2,24 @@
 
 namespace SteadyUa\Unicorn;
 
+use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Downloader\DownloaderInterface;
 use Composer\IO\IOInterface;
+use Composer\Package\Archiver\ArchivableFilesFinder;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
 use React\Promise\PromiseInterface;
+use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
+
+use function React\Promise\resolve;
 
 class LocalPathDownloader implements DownloaderInterface
 {
-    private $sourceDownloader;
-    private $io;
-    private $filesystem;
+    private DownloaderInterface $sourceDownloader;
+    private IOInterface $io;
+    private Filesystem $filesystem;
 
     public function __construct(DownloaderInterface $sourceDownloader, IOInterface $io)
     {
@@ -56,9 +61,44 @@ class LocalPathDownloader implements DownloaderInterface
         return $this->sourceDownloader->prepare($type, $package, $path, $prevPackage);
     }
 
-    public function install(PackageInterface $package, $path): PromiseInterface
+    /**
+     * @inheritDoc
+     */
+    public function install(PackageInterface $package, string $path, bool $output = true): PromiseInterface
     {
-        return $this->sourceDownloader->install($package, $path);
+        if ($package->getTransportOptions()['symlink'] ?? true) {
+            return $this->sourceDownloader->install($package, $path, $output);
+        }
+
+        $path = Filesystem::trimTrailingSlash($path);
+        $url = $package->getDistUrl();
+        $realUrl = realpath($url);
+        if (realpath($path) === $realUrl) {
+            if ($output) {
+                $this->io->writeError("  - " . InstallOperation::format($package) . ': Source already present');
+            }
+
+            return resolve(null);
+        }
+
+        $symfonyFilesystem = new SymfonyFilesystem();
+        $this->filesystem->removeDirectory($path);
+        if ($output) {
+            $this->io->writeError("  - " . InstallOperation::format($package) . ': ', false);
+        }
+
+        $realUrl = $this->filesystem->normalizePath($realUrl);
+        $iterator = new ArchivableFilesFinder(
+            $realUrl,
+            ['vendor', 'composer.lock']
+        );
+        $symfonyFilesystem->mirror($realUrl, $path, $iterator);
+
+        if ($output) {
+            $this->io->writeError(sprintf('%sMirroring from %s', '', $url));
+        }
+
+        return resolve();
     }
 
     public function update(PackageInterface $initial, PackageInterface $target, $path): PromiseInterface

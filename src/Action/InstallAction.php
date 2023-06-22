@@ -1,17 +1,19 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use RuntimeException;
 use SteadyUa\Unicorn\Utils;
 
-class InstallCmd extends AbstractCmd
+class InstallAction extends AbstractAction
 {
-    private $names;
-    private $utils;
-    private $packages;
+    private string $names;
+    private Utils $utils;
+
+    /** @var PackageInterface[] */
+    private array $packages;
 
     /**
      * @param Utils $utils

@@ -3,12 +3,12 @@
 namespace SteadyUa\Unicorn\Command;
 
 use Composer\Command\BaseCommand;
-use SteadyUa\Unicorn\Cmd\AbstractCmd;
-use SteadyUa\Unicorn\Cmd\InstallCmd;
-use SteadyUa\Unicorn\Cmd\ReqBackupCmd;
-use SteadyUa\Unicorn\Cmd\ReqTryInstallCmd;
-use SteadyUa\Unicorn\Cmd\ReqUpdateFilesCmd;
-use SteadyUa\Unicorn\Cmd\RunScriptsCmd;
+use SteadyUa\Unicorn\Action\AbstractAction;
+use SteadyUa\Unicorn\Action\InstallAction;
+use SteadyUa\Unicorn\Action\ReqBackupAction;
+use SteadyUa\Unicorn\Action\ReqTryInstallAction;
+use SteadyUa\Unicorn\Action\ReqUpdateFilesAction;
+use SteadyUa\Unicorn\Action\RunScriptsAction;
 use SteadyUa\Unicorn\Provider;
 use SteadyUa\Unicorn\Utils;
 use SteadyUa\Unicorn\Version;
@@ -18,7 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class UpdateCommand extends BaseCommand
 {
-    private $provider;
+    private Provider $provider;
 
     public function __construct(Provider $provider)
     {
@@ -86,23 +86,23 @@ class UpdateCommand extends BaseCommand
         }
 
         $utils = new Utils($io, $output);
-        $backupCmd = new ReqBackupCmd($changes);
-        $updateCmd = new ReqUpdateFilesCmd($changes);
-        $tryInstallCmd = new ReqTryInstallCmd();
-        $installCmd = new InstallCmd($utils, $install);
+        $backupCmd = new ReqBackupAction($changes);
+        $updateCmd = new ReqUpdateFilesAction($changes);
+        $tryInstallCmd = new ReqTryInstallAction();
+        $installCmd = new InstallAction($utils, $install);
 
         $scripts = $this->provider->getPostUpdateScripts();
         if ($scripts) {
-            $installCmd->setNext(new RunScriptsCmd($utils, $scripts, $install));
+            $installCmd->setNext(new RunScriptsAction($utils, $scripts, $install));
         }
 
-        $cmd = AbstractCmd::emptyCmd();
+        $cmd = AbstractAction::emptyCmd();
         $cmd->setNext($backupCmd)
             ->setNext($updateCmd)
             ->setNext($tryInstallCmd)
             ->setNext($installCmd)
         ;
-        AbstractCmd::runCmd($cmd, $io);
+        AbstractAction::runCmd($cmd, $io);
 
         return self::SUCCESS;
     }

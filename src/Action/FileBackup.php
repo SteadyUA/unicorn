@@ -1,10 +1,11 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 class FileBackup
 {
-    private $files = [];
+    /** @var array<string> */
+    private array $files = [];
 
     private function backupPath(string $filePath): string
     {

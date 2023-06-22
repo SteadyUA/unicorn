@@ -1,14 +1,14 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 
-class ReqUpdateFilesCmd extends AbstractCmd
+class ReqUpdateFilesAction extends AbstractAction
 {
     /** @var array<string, array> */
-    private $changes;
+    private array $changes;
 
     public function __construct(
         array $changes

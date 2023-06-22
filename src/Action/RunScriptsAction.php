@@ -1,16 +1,18 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
+use Composer\Package\CompletePackageInterface;
 use RuntimeException;
 use SteadyUa\Unicorn\Utils;
 
-class RunScriptsCmd extends AbstractCmd
+class RunScriptsAction extends AbstractAction
 {
-    private $scripts;
-    private $utils;
-    private $packages;
+    private array $scripts;
+    private Utils $utils;
+    /** @var array<CompletePackageInterface> */
+    private array $packages;
 
     public function __construct(Utils $utils, array $scripts, array $packages)
     {

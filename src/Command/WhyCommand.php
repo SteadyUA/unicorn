@@ -10,9 +10,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DependsCommand extends BaseDependencyCommand
+class WhyCommand extends BaseDependencyCommand
 {
-    private $provider;
+    private Provider $provider;
 
     public function __construct(Provider $provider)
     {
@@ -23,8 +23,7 @@ class DependsCommand extends BaseDependencyCommand
     protected function configure()
     {
         $this
-            ->setName('uni:depends')
-            ->setAliases(['uni:why'])
+            ->setName('uni:why')
             ->setDescription('Shows which packages cause the given package to be installed.')
             ->setDefinition([
                 new InputArgument(self::ARGUMENT_PACKAGE, InputArgument::OPTIONAL, 'Package to inspect'),

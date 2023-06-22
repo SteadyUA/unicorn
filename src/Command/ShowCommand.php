@@ -9,8 +9,8 @@ use SteadyUa\Unicorn\Provider;
 
 class ShowCommand extends \Composer\Command\ShowCommand
 {
-    private $provider;
-    private $composer;
+    private Provider $provider;
+    private Composer $composer;
 
     public function __construct(Provider $provider)
     {
@@ -22,7 +22,6 @@ class ShowCommand extends \Composer\Command\ShowCommand
     {
         parent::configure();
         $this->setName('uni:show');
-        $this->setAliases(['uni:info']);
         $this->setHelp($this->getHelp() . <<<EOT
 
 
@@ -35,7 +34,7 @@ EOT);
 
     public function tryComposer(bool $disablePlugins = null, bool $disableScripts = null): Composer
     {
-        if (null === $this->composer) {
+        if (!isset($this->composer)) {
             $this->composer = $this->provider->uniComposer();
             $im = $this->composer->getInstallationManager();
             $GLOBALS['uni_path'] = $this->provider->getDir();

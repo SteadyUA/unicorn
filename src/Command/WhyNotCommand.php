@@ -7,13 +7,12 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ProhibitsCommand extends DependsCommand
+class WhyNotCommand extends WhyCommand
 {
     protected function configure()
     {
         $this
-            ->setName('uni:prohibits')
-            ->setAliases(['uni:why-not'])
+            ->setName('uni:why-not')
             ->setDescription('Shows which packages prevent the given package from being installed.')
             ->setDefinition([
                 new InputArgument(self::ARGUMENT_PACKAGE, InputArgument::REQUIRED, 'Package to inspect'),

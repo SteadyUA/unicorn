@@ -10,10 +10,12 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
+use function React\Promise\all;
+
 class Utils
 {
-    private $io;
-    private $output;
+    private IOInterface $io;
+    private OutputInterface $output;
 
     public function __construct(IOInterface $io, OutputInterface $output)
     {
@@ -21,6 +23,11 @@ class Utils
         $this->output = $output;
     }
 
+    /**
+     * @param array $runScripts
+     * @param array<string, CompletePackageInterface> $depends
+     * @return int
+     */
     public function runScripts(array $runScripts, array $depends): int
     {
         $promises = [];
@@ -28,7 +35,6 @@ class Utils
         $process->enableAsync();
         $errors = [];
         $tasks = [];
-        /** @var CompletePackageInterface $package */
         foreach ($depends as $pkgName => $package) {
             $scripts = $package->getScripts();
             foreach ($runScripts as $name) {
@@ -87,7 +93,7 @@ class Utils
 
         return !empty($errors) ? 1 : 0;
     }
-    
+
     public function install(array $packages, string $options = ''): int
     {
         $promises = [];
@@ -163,7 +169,7 @@ class Utils
         $uncaught = null;
         /** @var ProgressBar $progress */
         $progress = $this->io->getProgressBar();
-        \React\Promise\all($promises)->then(
+        all($promises)->then(
             function (): void {
             },
             function ($e) use (&$uncaught): void {

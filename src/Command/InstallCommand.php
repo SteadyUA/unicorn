@@ -3,21 +3,15 @@
 namespace SteadyUa\Unicorn\Command;
 
 use Composer\Command\BaseCommand;
-use Composer\Util\Platform;
 use SteadyUa\Unicorn\Provider;
 use SteadyUa\Unicorn\Utils;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class InstallCommand extends BaseCommand
 {
-    private $provider;
-
-    public const OPTION_FORCE = 'force';
-    public const OPTION_ALL = 'all';
-    public const OPTION_COPY = 'copy';
+    private Provider $provider;
 
     public function __construct(Provider $provider)
     {
@@ -29,26 +23,12 @@ class InstallCommand extends BaseCommand
     {
         $this
             ->setName('uni:install')
-            ->setAliases(['uni:i'])
             ->setDescription('Install monorepo packages.')
             ->setDefinition([
                 new InputArgument(
                     'packages',
                     InputArgument::IS_ARRAY | InputArgument::OPTIONAL,
                     'Optional package name'
-                ),
-                new InputOption(self::OPTION_ALL, 'a', InputOption::VALUE_NONE, 'Run install for all local packages.'),
-                new InputOption(
-                    self::OPTION_COPY,
-                    '',
-                    InputOption::VALUE_NONE,
-                    'Packages will be copied instead of symlinks.'
-                ),
-                new InputOption(
-                    'no-scripts',
-                    null,
-                    InputOption::VALUE_NONE,
-                    'Whether to prevent execution of all defined scripts.'
                 ),
             ])
         ;
@@ -68,11 +48,7 @@ class InstallCommand extends BaseCommand
                 }
                 $packages[] = $package;
             }
-        } elseif ($input->getOption(self::OPTION_ALL)) {
-            if ($input->getOption(self::OPTION_COPY)) {
-                $output->writeln('<error>Copy mode is only allowed when packages are specified.</error>');
-                return self::FAILURE;
-            }
+        } else {
             $packages = $localRepo->getPackages();
         }
         if (count($packages) == 0) {
@@ -86,17 +62,9 @@ class InstallCommand extends BaseCommand
             }
         }
 
-        $installOptions = '';
-        if ($input->getOption(self::OPTION_COPY)) {
-            Platform::putEnv('UNI_COPY', '1');
-            $installOptions = $this->provider->getCopyInstallOptions();
-        }
-        if ($input->getOption('no-scripts')) {
-            $installOptions .= ' --no-scripts';
-        }
         $utils = new Utils($this->getIO(), $output);
 
-        return $utils->install($packages, $installOptions);
+        return $utils->install($packages);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)

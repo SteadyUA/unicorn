@@ -10,11 +10,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class SuggestCommand extends BaseCommand
+class NamespaceCommand extends BaseCommand
 {
-
-    /** @var Provider */
-    private $provider;
+    private Provider $provider;
 
     public function __construct(Provider $provider)
     {
@@ -25,9 +23,9 @@ class SuggestCommand extends BaseCommand
     protected function configure()
     {
         $this
-            ->setName('uni:suggest')
-            ->setDescription('Suggest package by namespace.')
-            ->addArgument('ns', InputArgument::IS_ARRAY|InputArgument::REQUIRED, 'namespace for search.')
+            ->setName('uni:namespace')
+            ->setDescription('Suggest package by namespace pattern.')
+            ->addArgument('query', InputArgument::IS_ARRAY|InputArgument::REQUIRED, 'Namespace pattern for search.')
         ;
     }
 
@@ -37,14 +35,8 @@ class SuggestCommand extends BaseCommand
             return false;
         }
         foreach ($autoload['psr-4'] as $ns => $path) {
-            foreach ($searchData as $symbolName => $symbolLen) {
-                $nsLen = strlen($ns);
-                $nsLower = strtolower($ns);
-                if ($nsLen > $symbolLen) {
-                    if (substr($nsLower, 0, $symbolLen) == $symbolName) {
-                        return $ns;
-                    }
-                } elseif (substr($symbolName, 0, $nsLen) == $nsLower) {
+            foreach ($searchData as $symbolName) {
+                if (fnmatch($symbolName, $ns, FNM_NOESCAPE | FNM_CASEFOLD)) {
                     return $ns;
                 }
             }
@@ -55,11 +47,8 @@ class SuggestCommand extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $toFind = $input->getArgument('ns');
-        $searchData = [];
-        foreach ($toFind as $ns) {
-            $searchData[strtolower($ns)] = strlen($ns);
-        }
+        $toFind = $input->getArgument('query');
+        $searchData = !is_array($toFind) ? [$toFind] : $toFind;
 
         $data = [];
 
@@ -74,7 +63,7 @@ class SuggestCommand extends BaseCommand
                         ? $this->provider->relative($package->getDistUrl(), true)
                         : $package->getDistUrl();
                 }
-                $data += [$ns => [$package->getName(), $ns, $path]];
+                $data += [$ns => [$ns, $package->getName(), $path]];
             }
         }
         if (empty($data)) {
@@ -91,7 +80,7 @@ class SuggestCommand extends BaseCommand
         $renderer->setStyle('compact');
         $rendererStyle = $renderer->getStyle();
         $rendererStyle->setCellRowContentFormat('%s  ');
-        $renderer->setHeaders(['Package', 'Namespace', 'Path'])
+        $renderer->setHeaders(['Namespace', 'Package', 'Path'])
             ->setRows($data)
             ->render();
 

@@ -7,24 +7,25 @@ use Composer\IO\IOInterface;
 use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
+use SteadyUa\Unicorn\Command\BuildCommand;
 use SteadyUa\Unicorn\Command\InstallCommand;
-use SteadyUa\Unicorn\Command\ProhibitsCommand;
+use SteadyUa\Unicorn\Command\WhyNotCommand;
 use SteadyUa\Unicorn\Command\UpdateCommand;
 use SteadyUa\Unicorn\Command\RunCommand;
 use SteadyUa\Unicorn\Command\ShowCommand;
-use SteadyUa\Unicorn\Command\SuggestCommand;
-use SteadyUa\Unicorn\Command\DependsCommand;
+use SteadyUa\Unicorn\Command\NamespaceCommand;
+use SteadyUa\Unicorn\Command\WhyCommand;
+use SteadyUa\Unicorn\Command\ServerCommand;
 use SteadyUa\Unicorn\Command\VersionCommand;
 
 class Plugin implements PluginInterface, Capable, CommandProvider
 {
-    /** @var Provider */
-    private static $provider;
+    private static Provider $provider;
 
     public function activate(Composer $composer, IOInterface $io)
     {
         self::$provider = new Provider(getcwd(), $composer);
-        if (empty(self::$provider->config())) {
+        if (!self::$provider->isActive()) {
             return;
         }
 
@@ -41,18 +42,21 @@ class Plugin implements PluginInterface, Capable, CommandProvider
 
     public function getCommands(): array
     {
-        if (empty(self::$provider->config())) {
+        if (!self::$provider->isActive()) {
             return [];
         }
+
         return [
-            new DependsCommand(self::$provider),
-            new ProhibitsCommand(self::$provider),
+            new WhyCommand(self::$provider),
+            new WhyNotCommand(self::$provider),
             new ShowCommand(self::$provider),
-            new SuggestCommand(self::$provider),
+            new NamespaceCommand(self::$provider),
             new InstallCommand(self::$provider),
             new VersionCommand(self::$provider),
             new RunCommand(self::$provider),
             new UpdateCommand(self::$provider),
+            new ServerCommand(self::$provider),
+            new BuildCommand(self::$provider),
         ];
     }
 

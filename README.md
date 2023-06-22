@@ -76,7 +76,7 @@ And it speeds up installation.
 The used versions are fixed in the `unicorn.lock` file and will be used during installation.
 
 > When deploying an application, instead of symbolic links, you can copy the necessary packages.\
-Use the `--copy` option of command [composer uni:install](#composer-uniinstall)
+Command [composer uni:build](#composer-unibuild)
 
 ## Installation
 
@@ -111,14 +111,6 @@ Otherwise, it will check the consistency of package requirements.
 You can specify a list of local packages. In this case, for each package, the command will be executed
 `composer install`
 
-#### Options:
-- `-a, --all` Run command for all local packages.
-- `--copy` Packages will be copied instead of symlinks.\
-Only allowed when packages are specified.\
-It is [possible to set options](#copy-install-options) for executing the command `composer install`
-Useful for deployment.
-- `--no-scripts` Whether to prevent execution of all defined scripts.
-
 ### composer uni:update
 
     compose uni:update <packages>...
@@ -146,9 +138,9 @@ In case of an error, the files will be returned to their original state.
 
 Additionally, [you can specify](#post-update-scripts) a list of scripts that will be executed after the changes.
 
-### composer uni:run-script
+### composer uni:run
 
-    uni:run-script [options] [--] [<script>...]
+    uni:run [options] [--] [<script>...]
 
 Runs the scripts defined in unicorn.json, for all packages dependent on the current.
 
@@ -156,13 +148,14 @@ Runs the scripts defined in unicorn.json, for all packages dependent on the curr
 - `-s, --self` Also run script for the current package.
 - `-r, --recursive` Recursively resolves dependencies up to the root.
 - `-a, --all` Run for all local packages.
+- `-l, --list` List scripts.
 
 
-### composer uni:depends
+### composer uni:why
     
 Shows which packages cause the given package to be installed.
 
-### composer uni:prohibits
+### composer uni:why-not
 
 Shows which packages prevent the given package from being installed.
 
@@ -170,9 +163,18 @@ Shows which packages prevent the given package from being installed.
 
 Shows information about packages.
 
-### composer uni:suggest
+### composer uni:namespace
 
-Suggest package by specified namespace.
+Suggest package by namespace pattern.
+
+### composer uni:build
+
+    composer uni:build <package> <directory>
+
+Builds a local package in the specified directory.
+All required packages will be copied instead of symlinked.
+
+It is [possible to set options](#build-install-options) for executing the command `composer install`
 
 ## The unicorn.json schema
 
@@ -204,16 +206,16 @@ Example:
 
 ### extra
 
-#### copy-install-options
+#### build-install-options
 Type: string
 
-Additional options to be passed to the command `composer install` in copy mode [uni:install](#composer-uniinstall)
+Additional options to be passed to the command `composer install` for [uni:build](#composer-unibuild)
 
 Example:
 ```json
 {
     "extra": {
-        "copy-install-options": "--no-dev --optimize-autoloader"
+        "build-install-options": "--no-dev --optimize-autoloader"
     }
 }
 ```

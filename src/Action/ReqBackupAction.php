@@ -1,12 +1,12 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 
-class ReqBackupCmd extends AbstractCmd
+class ReqBackupAction extends AbstractAction
 {
-    private $backup;
+    private FileBackup $backup;
 
     public function __construct(
         array $changes

@@ -4,11 +4,11 @@ namespace SteadyUa\Unicorn\Command;
 
 use Composer\Command\BaseCommand;
 use RuntimeException;
-use SteadyUa\Unicorn\Cmd\AbstractCmd;
-use SteadyUa\Unicorn\Cmd\InstallCmd;
-use SteadyUa\Unicorn\Cmd\RunScriptsCmd;
-use SteadyUa\Unicorn\Cmd\VerBackupCmd;
-use SteadyUa\Unicorn\Cmd\VerUpdateFilesCmd;
+use SteadyUa\Unicorn\Action\AbstractAction;
+use SteadyUa\Unicorn\Action\InstallAction;
+use SteadyUa\Unicorn\Action\RunScriptsAction;
+use SteadyUa\Unicorn\Action\VerBackupAction;
+use SteadyUa\Unicorn\Action\VerUpdateFilesAction;
 use SteadyUa\Unicorn\Provider;
 use SteadyUa\Unicorn\Utils;
 use SteadyUa\Unicorn\Version;
@@ -18,8 +18,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class VersionCommand extends BaseCommand
 {
-    /** @var Provider  */
-    private $provider;
+    private Provider $provider;
 
     public const TYPE_PATCH = 'patch';
     public const TYPE_MINOR = 'minor';
@@ -83,15 +82,15 @@ class VersionCommand extends BaseCommand
         $install = $this->provider->getDepends($package, true);
         $install = [$package->getName() => $package] + $install;
 
-        $backupCmd = new VerBackupCmd($package, $blocked);
-        $updateCmd = new VerUpdateFilesCmd(
+        $backupCmd = new VerBackupAction($package, $blocked);
+        $updateCmd = new VerUpdateFilesAction(
             $package,
             $blocked,
             $newVersion
         );
-        $installCmd = new InstallCmd($utils, $install);
+        $installCmd = new InstallAction($utils, $install);
 
-        $cmd = AbstractCmd::emptyCmd();
+        $cmd = AbstractAction::emptyCmd();
         $cmd->setNext($backupCmd)
             ->setNext($updateCmd)
             ->setNext($installCmd)
@@ -99,11 +98,11 @@ class VersionCommand extends BaseCommand
         $scripts = $this->provider->getPostUpdateScripts();
         if ($scripts) {
             $installCmd->setNext(
-                new RunScriptsCmd($utils, $scripts, $install)
+                new RunScriptsAction($utils, $scripts, $install)
             );
         }
 
-        return AbstractCmd::runCmd($cmd, $io);
+        return AbstractAction::runCmd($cmd, $io);
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)

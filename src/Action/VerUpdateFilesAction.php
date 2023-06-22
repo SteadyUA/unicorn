@@ -1,17 +1,17 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use SteadyUa\Unicorn\Version;
 
-class VerUpdateFilesCmd extends AbstractCmd
+class VerUpdateFilesAction extends AbstractAction
 {
-    private $package;
+    private PackageInterface $package;
     /** @var PackageInterface[] */
-    private $blocked;
-    private $newVersion;
+    private array $blocked;
+    private Version $newVersion;
 
     public function __construct(
         PackageInterface $package,

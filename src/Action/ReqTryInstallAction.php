@@ -1,11 +1,11 @@
 <?php
 
-namespace SteadyUa\Unicorn\Cmd;
+namespace SteadyUa\Unicorn\Action;
 
 use Composer\IO\IOInterface;
 use RuntimeException;
 
-class ReqTryInstallCmd extends AbstractCmd
+class ReqTryInstallAction extends AbstractAction
 {
     public function exec(IOInterface $io): void
     {
