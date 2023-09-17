@@ -22,6 +22,7 @@ class WhyCommand extends BaseDependencyCommand
 
     protected function configure()
     {
+        parent::configure();
         $this
             ->setName('uni:why')
             ->setDescription('Shows which packages cause the given package to be installed.')
@@ -34,6 +35,7 @@ class WhyCommand extends BaseDependencyCommand
                     'Recursively resolves up to the root package'
                 ),
                 new InputOption(self::OPTION_TREE, 't', InputOption::VALUE_NONE, 'Prints the results as a nested tree'),
+                new InputOption('locked', null, InputOption::VALUE_NONE, 'Read dependency information from composer.lock'),
             ])
         ;
     }

@@ -16,6 +16,7 @@ use Composer\Package\PackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\InstalledRepository;
+use Composer\Semver\Constraint\Constraint;
 use Composer\Util\Platform;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -125,6 +126,7 @@ class Provider
         $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
 
         if (!$isLocked || !$isFresh || !$vendorExists) {
+
             // refresh
             $install = Installer::create($uniIo, $uniComposer);
             $install
@@ -142,8 +144,21 @@ class Provider
                 $updateList = [];
                 foreach ($localRepo->getPackages() as $package) {
                     $lockedPackage = $lockedRepo->findPackage($package->getName(), '*');
-                    if (!isset($lockedPackage) || $lockedPackage->getDistReference() !== $package->getDistReference()) {
+                    if (!isset($lockedPackage)
+                        || $lockedPackage->getDistReference() !== $package->getDistReference()
+                    ) {
                         $updateList[] = $package->getName();
+                    }
+                    foreach ($package->getRequires() as $reqName => $reqLink) {
+                        if (str_contains($reqName, '/')) {
+                            $lockedPackage = $lockedRepo->findPackage($reqName, '*');
+                            if ($lockedPackage) {
+                                $locked = new Constraint('=', $lockedPackage->getVersion());
+                                if (!$reqLink->getConstraint()->matches($locked)) {
+                                    $updateList[] = $reqName;
+                                }
+                            }
+                        }
                     }
                 }
                 if ($updateList) {
