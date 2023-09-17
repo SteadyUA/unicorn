@@ -37,7 +37,7 @@ class UpdateCommand extends BaseCommand
                         'packages',
                         InputArgument::IS_ARRAY | InputArgument::REQUIRED,
                         'Package name can also also include a version constraint,'
-                        . ' e.g. foo/bar or foo/bar:1.0.0 or foo/bar=1.0.0 or "foo/bar 1.0.0"'
+                        . ' e.g. foo/bar or foo/bar:1.0.0 or foo/bar=1.0.0 or "foo/bar 1.0.0".'
                     ),
                 ]
             )
@@ -54,10 +54,21 @@ class UpdateCommand extends BaseCommand
         $lockedRepository = $composer->getLocker()->getLockedRepository();
         $changes = [];
         $install = [];
+        $localPackages = [];
         foreach ($requirements as $package) {
             $name = $package['name'];
+            if ($name == 'self') {
+                $name = $this->provider->composer()->getPackage()->getName();
+                if ($name == '__root__') {
+                    $output->writeln('Could not find a composer.json file in ' . getcwd());
+                    return self::FAILURE;
+                }
+            }
             $lockedPkg = $lockedRepository->findPackage($name, '*');
             if (isset($lockedPkg)) {
+                if ($lockedPkg->getDistType() == 'path') {
+                    $localPackages[] = $name;
+                }
                 $depends = $this->provider->getDepends($lockedPkg);
             }
             if (empty($depends)) {
@@ -73,6 +84,9 @@ class UpdateCommand extends BaseCommand
             }
 
             foreach ($depends as $depend) {
+                if (!$depend) {
+                    continue;
+                }
                 if (!isset($changes[$depend->getName()])) {
                     $changes[$depend->getName()] = [
                         'pkg' => $depend,
@@ -88,7 +102,7 @@ class UpdateCommand extends BaseCommand
         $utils = new Utils($io, $output);
         $backupCmd = new ReqBackupAction($changes);
         $updateCmd = new ReqUpdateFilesAction($changes);
-        $tryInstallCmd = new ReqTryInstallAction();
+        $tryInstallCmd = new ReqTryInstallAction($localPackages);
         $installCmd = new InstallAction($utils, $install);
 
         $scripts = $this->provider->getPostUpdateScripts();

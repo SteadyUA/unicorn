@@ -41,6 +41,13 @@ class InstallCommand extends BaseCommand
         $packages = [];
         if (!empty($packagesArg)) {
             foreach ($packagesArg as $packageName) {
+                if ($packageName == 'self') {
+                    $packageName = $this->provider->composer()->getPackage()->getName();
+                    if ($packageName == '__root__') {
+                        $output->writeln('Could not find a composer.json file in ' . getcwd());
+                        return self::FAILURE;
+                    }
+                }
                 $package = $localRepo->findPackage($packageName, '*');
                 if (!isset($package)) {
                     $output->writeln('<error>Not found: ' . $packageName . '</error>');

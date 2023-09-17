@@ -28,6 +28,7 @@ class WhyNotCommand extends WhyCommand
                     'Recursively resolves up to the root package'
                 ),
                 new InputOption(self::OPTION_TREE, 't', InputOption::VALUE_NONE, 'Prints the results as a nested tree'),
+                new InputOption('locked', null, InputOption::VALUE_NONE, 'Read dependency information from composer.lock'),
             ])
         ;
     }
