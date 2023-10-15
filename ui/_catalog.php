@@ -13,6 +13,7 @@ return Tpl::extends('_main.php')
     })
     ->set('fields', [
         'name',
+        'ver',
         'dep',
         'req',
         'type',
@@ -38,6 +39,7 @@ return Tpl::extends('_main.php')
                     'path' => str_replace('uni_vendor/', '<span class="uni">uni_vendor</span>/', $pkg->path()),
                     'dep' => count($pkg->depends()),
                     'req'=> count($pkg->require()),
+                    'ver' => $pkg->version(),
                     'name' => '<a href="/?r=' . $_GET['r']
                         . '&p=' . $pkg->name() . '" class="type ' . $pkg->type() . '">'
                         . $pkg->name()

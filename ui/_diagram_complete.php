@@ -6,7 +6,7 @@ return Tpl::extends('_diagram.php')
 ->block('nav', function ($v) {
     $this->parent('nav'); ?>
     <h1 class="caption"><a href="<?=ln($v['package']->name())?>"><?=$v['package']->name()?> <?=$v['package']->version()?></a></h1>
-    <h2 class="d-<?=$_GET['d']?> caption"><?=($_GET['d'] == 'down' ? "requirements down" : "dependencies from top")?>: <?=count($v['diagram']->nodes()) - 1?></h2>
+    <h2 class="d-<?=$_GET['d']?> caption"><?=($_GET['d'] == 'down' ? "requirements to the very bottom" : "dependents from above")?>: <?=count($v['diagram']->nodes()) - 1?></h2>
 <?php })
 
 ->block('content', function ($v) {

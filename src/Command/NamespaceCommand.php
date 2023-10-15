@@ -63,7 +63,7 @@ class NamespaceCommand extends BaseCommand
                         ? $this->provider->relative($package->getDistUrl(), true)
                         : $package->getDistUrl();
                 }
-                $data += [$ns => [$ns, $package->getName(), $path]];
+                $data[] = [$ns, $package->getName(), $path];
             }
         }
         if (empty($data)) {
