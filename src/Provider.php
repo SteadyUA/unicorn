@@ -12,6 +12,7 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Package\Loader\ArrayLoader;
+use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\CompositeRepository;
@@ -122,9 +123,9 @@ class Provider
         $uniComposer = $this->uniComposer($uniIo);
 
         $isLocked = $uniComposer->getLocker()->isLocked();
-        $isFresh = $uniComposer->getLocker()->isFresh();
+        $isFresh = $isLocked && $uniComposer->getLocker()->isFresh();
         $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
-
+//var_dump([$isLocked, $isFresh, $vendorExists]); die;
         if (!$isLocked || !$isFresh || !$vendorExists) {
 
             // refresh
@@ -161,14 +162,20 @@ class Provider
                         }
                     }
                 }
+                // detect removed
+                foreach ($lockedRepo->getPackages() as $package) {
+                    $lockedPackage = $localRepo->findPackage($package->getName(), '*');
+                    if (!isset($lockedPackage)) {
+                        $updateList[] = $package->getName();
+                    }
+                }
+
                 if ($updateList) {
                     $install
                         ->setUpdate(true)
                         ->setUpdateAllowList($updateList)
                         ->setUpdateAllowTransitiveDependencies(Request::UPDATE_ONLY_LISTED)
                     ;
-                } else {
-                    $uniComposer->getLocker()->writeHash();
                 }
             }
 
@@ -199,9 +206,10 @@ class Provider
                 );
                 $io->writeError($output);
             }
-            if (!$vendorExists) {
-                $uniComposer->getLocker()->writeHash();
-            }
+//            if (!$vendorExists) {
+//                $uniComposer->getLocker()->writeHash();
+//            }
+
         } elseif ($io->isVerbose()) {
             $io->write('    <info> Nothing to install, update or remove </info>');
         }
@@ -256,7 +264,7 @@ class Provider
 
         // init locker
         $lockFile = new JsonFile($unicornDir . '/unicorn.lock', null, $io);
-        $locker = new UniLocker(
+        $locker = new Locker(
             $io,
             $lockFile,
             $composer->getInstallationManager(),
