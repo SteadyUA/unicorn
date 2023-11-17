@@ -125,7 +125,7 @@ class Provider
         $isLocked = $uniComposer->getLocker()->isLocked();
         $isFresh = $isLocked && $uniComposer->getLocker()->isFresh();
         $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
-//var_dump([$isLocked, $isFresh, $vendorExists]); die;
+//var_dump([$isLocked, $isFresh, $vendorExists]);
         if (!$isLocked || !$isFresh || !$vendorExists) {
 
             // refresh
@@ -164,6 +164,9 @@ class Provider
                 }
                 // detect removed
                 foreach ($lockedRepo->getPackages() as $package) {
+                    if ($package->getDistType() != 'path') {
+                        continue;
+                    }
                     $lockedPackage = $localRepo->findPackage($package->getName(), '*');
                     if (!isset($lockedPackage)) {
                         $updateList[] = $package->getName();
@@ -206,9 +209,6 @@ class Provider
                 );
                 $io->writeError($output);
             }
-//            if (!$vendorExists) {
-//                $uniComposer->getLocker()->writeHash();
-//            }
 
         } elseif ($io->isVerbose()) {
             $io->write('    <info> Nothing to install, update or remove </info>');
