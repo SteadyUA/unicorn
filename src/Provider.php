@@ -63,6 +63,17 @@ class Provider
         return dirname($this->config['path']);
     }
 
+    private function getInstalledInfo(): ?array
+    {
+        $path = $this->getDir() . '/uni_vendor/composer/installed.php';
+        if (file_exists($path)) {
+            $installedInfo = include $path;
+            return $installedInfo['versions'];
+        }
+
+        return null;
+    }
+
     private function injectUniRepo()
     {
         if (empty($this->config)) {
@@ -75,9 +86,10 @@ class Provider
             'options' => ['versions' => []],
         ];
 
-        $installedInfo = (new JsonFile($this->getDir() . '/uni_vendor/composer/installed.json'))->read();
-        foreach ($installedInfo['packages'] as $package) {
-            $uniRepoCfg['options']['versions'][$package['name']] = $package['version'];
+        foreach ($this->getInstalledInfo() ?? [] as $packageName => $info) {
+            if (isset($info['pretty_version'])) {
+                $uniRepoCfg['options']['versions'][$packageName] = $info['pretty_version'];
+            }
         }
         if (Platform::getEnv('UNI_BUILD')) {
             $uniRepoCfg['options']['symlink'] = false;
@@ -125,7 +137,28 @@ class Provider
         $isLocked = $uniComposer->getLocker()->isLocked();
         $isFresh = $isLocked && $uniComposer->getLocker()->isFresh();
         $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
-//var_dump([$isLocked, $isFresh, $vendorExists]);
+
+        $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
+        $localRepo = $this->localRepo();
+
+        // check new not installed packages
+        if ($isFresh) {
+            $installedInfo = $this->getInstalledInfo();
+            if (!isset($installedInfo)) {
+                $isFresh = false;
+            } else {
+                foreach ($lockedRepo->getPackages() as $package) {
+                    if (!isset($installedInfo[$package->getName()])) {
+                        $isFresh = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if ($io->isVeryVerbose()) {
+            $io->write("isLocked: $isLocked, isFresh: $isFresh, vendorExists: $vendorExists");
+        }
+
         if (!$isLocked || !$isFresh || !$vendorExists) {
 
             // refresh
@@ -140,8 +173,6 @@ class Provider
             if (!$isLocked) {
                 $install->setUpdate(true);
             } elseif (!$isFresh && $vendorExists) {
-                $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
-                $localRepo = $this->localRepo();
                 $updateList = [];
                 foreach ($localRepo->getPackages() as $package) {
                     $lockedPackage = $lockedRepo->findPackage($package->getName(), '*');
