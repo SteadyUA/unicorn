@@ -172,7 +172,7 @@ class Provider
 
             if (!$isLocked) {
                 $install->setUpdate(true);
-            } elseif (!$isFresh && $vendorExists) {
+            } elseif (!$isFresh || !$vendorExists) {
                 $updateList = [];
                 foreach ($localRepo->getPackages() as $package) {
                     $lockedPackage = $lockedRepo->findPackage($package->getName(), '*');
