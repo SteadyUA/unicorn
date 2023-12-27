@@ -98,7 +98,7 @@ class LocalPathDownloader implements DownloaderInterface
             $this->io->writeError(sprintf('%sMirroring from %s', '', $url));
         }
 
-        return resolve();
+        return resolve(null);
     }
 
     public function update(PackageInterface $initial, PackageInterface $target, $path): PromiseInterface
