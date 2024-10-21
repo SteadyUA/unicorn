@@ -85,7 +85,6 @@ class Provider
             'url' => $this->relative($this->getDir() . '/uni_vendor/*/*'),
             'options' => ['versions' => []],
         ];
-
         foreach ($this->getInstalledInfo() ?? [] as $packageName => $info) {
             if (isset($info['pretty_version'])) {
                 $uniRepoCfg['options']['versions'][$packageName] = $info['pretty_version'];
@@ -138,7 +137,9 @@ class Provider
         $isFresh = $isLocked && $uniComposer->getLocker()->isFresh();
         $vendorExists = file_exists($uniComposer->getConfig()->get('vendor-dir'));
 
-        $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
+        if ($isLocked) {
+            $lockedRepo = $uniComposer->getLocker()->getLockedRepository();
+        }
         $localRepo = $this->localRepo();
 
         // check new not installed packages
@@ -148,7 +149,11 @@ class Provider
                 $isFresh = false;
             } else {
                 foreach ($lockedRepo->getPackages() as $package) {
-                    if (!isset($installedInfo[$package->getName()])) {
+                    $installedPackage = $installedInfo[$package->getName()] ?? null;
+                    if (
+                        !isset($installedPackage)
+                        || $installedPackage['version'] != $package->getVersion()
+                    ) {
                         $isFresh = false;
                         break;
                     }
