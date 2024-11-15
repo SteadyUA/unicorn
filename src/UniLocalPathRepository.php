@@ -14,11 +14,13 @@ class UniLocalPathRepository extends PathRepository
      */
     public function addPackage(PackageInterface $package)
     {
-        $requires = $package->getRequires();
-        foreach ($package->getDevRequires() as $target => $link) {
-            $requires[$target] = $link;
+        if ($package->getDistType() == 'path') {
+            $requires = $package->getRequires();
+            foreach ($package->getDevRequires() as $target => $link) {
+                $requires[$target] = $link;
+            }
+            $package->setRequires($requires);
         }
-        $package->setRequires($requires);
 
         parent::addPackage($package);
     }
