@@ -56,24 +56,28 @@ return Tpl::extends('_diagram.php')
             </div>
             <div class="deps">
                 <h3>Dependents: <?=count($package->depends())?></h3>
-                <ul>
-                    <?php foreach($package->depends() as $name => $link) {?>
-                        <li class="<?=$link->package()->type()?>">
-                            <a href="<?=ln($name)?>" class="<?=$link->isDev() ? 'dev' : ''?>"><?=$name?></a> (<?=$link->package()->rate()?>)
-                        </li>
-                    <?php } ?>
-                </ul>
+                <div class="scroll-list">
+                    <ul>
+                        <?php foreach($package->depends() as $name => $link) {?>
+                            <li class="<?=$link->package()->type()?>">
+                                <a href="<?=ln($name)?>" class="<?=$link->isDev() ? 'dev' : ''?>"><?=$name?></a> (<?=$link->package()->rate()?>)
+                            </li>
+                        <?php } ?>
+                    </ul>
+                </div>
                 <div><a href="<?=ln($package->name(), 'up')?>" class="d-up">Dependents from above: <?=count($v['diagramUp']->nodes()) - 1?></a></div>
             </div>
             <div class="reqs">
                 <h3>Requirements: <?=count($package->require())?></h3>
-                <ul>
-                    <?php foreach($package->require() as $name => $link) {?>
-                        <li class="<?=$link->package()->type()?>">
-                            <a href="<?=ln($name)?>" class="<?=$link->isDev() ? 'dev' : ''?>"><?=$name?></a> (<?=$link->package()->rate()?>)
-                        </li>
-                    <?php } ?>
-                </ul>
+                <div class="scroll-list">
+                    <ul>
+                        <?php foreach($package->require() as $name => $link) {?>
+                            <li class="<?=$link->package()->type()?>">
+                                <a href="<?=ln($name)?>" class="<?=$link->isDev() ? 'dev' : ''?>"><?=$name?></a> (<?=$link->package()->rate()?>)
+                            </li>
+                        <?php } ?>
+                    </ul>
+                </div>
                 <div><a href="<?=ln($package->name(), 'down')?>" class="d-down">Requirements to the very bottom: <?=count($v['diagramDown']->nodes()) - 1?></a></div>
             </div>
         </div>

@@ -197,7 +197,20 @@ class Provider
                             }
                         }
                     }
+                    foreach ($package->getDevRequires() as $reqName => $reqLink) {
+                        if (str_contains($reqName, '/')) {
+                            $lockedPackage = $lockedRepo->findPackage($reqName, '*');
+                            if ($lockedPackage) {
+                                $locked = new Constraint('=', $lockedPackage->getVersion());
+                                if (!$reqLink->getConstraint()->matches($locked)) {
+                                    $updateList[] = $reqName;
+                                }
+                            }
+                        }
+                    }
                 }
+                $updateList = array_unique($updateList);
+
                 // detect removed
                 foreach ($lockedRepo->getPackages() as $package) {
                     if ($package->getDistType() != 'path') {
