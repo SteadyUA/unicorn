@@ -54,28 +54,22 @@ class Utils
         foreach ($tasks as $pkgName => $scripts) {
             $package = $depends[$pkgName];
             $pkgDir = $package->getDistUrl();
+            $commands = [];
             foreach ($scripts as $script) {
                 $cmd = 'composer run ' . $script;
-                $promises[] = $process->executeAsync($cmd, $pkgDir)->then(
-                    function (Process $process) use (&$errors, $package, &$tasks, $script) {
-                        if ($process->getExitCode() > 0) {
-                            $tasks[$package->getName()][$script] = '<error>Failed</error>';
-                            $errors[] = [
-                                'pkg' => $package->getName(),
-                                'cmd' => $process->getCommandLine(),
-                                'dir' => $process->getWorkingDirectory(),
-                                'out' => $process->getOutput(),
-                                'err' => $process->getErrorOutput(),
-                            ];
-                        } else {
-                            $tasks[$package->getName()][$script] = '<info>Ok</info>';
-                        }
-                    }
-                );
+                $commands[] = [
+                    'pkg' => $package->getName(),
+                    'script' => $script,
+                    'cmd' => $cmd,
+                    'dir' => $pkgDir,
+                ];
+                $tasks[$package->getName()][$script] = '<info>Ok</info>';
             }
         }
-
-        $this->executeCommands($promises, $process);
+        $errors = $this->exec($commands, false);
+        foreach ($errors as $error) {
+            $tasks[$error['pkg']][$error['script']] = '<error>Failed</error>';
+        }
 
         $this->printReport($depends, $runScripts, $tasks);
 
@@ -83,53 +77,71 @@ class Utils
             $this->io->write('<error> ' . $error['pkg'] . ' </error>');
             $this->io->write('<info> cmd: ' . $error['cmd'] . ' </info>');
             $this->io->write('<info> dir: ' . $error['dir'] . ' </info>');
-            if ($error['out']) {
-                $this->io->write($error['out']);
-            }
-            if ($error['err']) {
-                $this->io->write($error['err']);
-            }
+            $this->io->write($error['out']);
         }
 
         return !empty($errors) ? 1 : 0;
     }
 
-    public function install(array $packages, string $options = ''): int
+    /** @param array{cmd:string,dir:string}[] $commands */
+    private function exec(array $commands, bool $async = true): array
     {
-        $promises = [];
         $process = new ProcessExecutor($this->io);
-        $process->enableAsync();
         $errors = [];
-        foreach ($packages as $package) {
-            $pkgDir = $package->getDistUrl();
-            $cmd = 'rm -rf vendor composer.lock';
-            $cmd .= ' && composer install -n ' . $options;
-            $promises[] = $process->executeAsync($cmd, $pkgDir)->then(
-                function (Process $process) use (&$errors, $package) {
-                    if ($process->getExitCode() > 0) {
-                        $errors[] = [
-                            'pkg' => $package,
-                            'cmd' => $process->getCommandLine(),
-                            'out' => $process->getOutput(),
-                            'err' => $process->getErrorOutput(),
-                        ];
-                    }
+        if ($async == false) {
+            $progress = $this->io->getProgressBar();
+            $progress->start(count($commands));
+            $i = 1;
+            foreach ($commands as $command) {
+                $output = '';
+                $res = $process->execute($command['cmd'], $output, $command['dir']);
+                if ($res > 0) {
+                    $errors[] = $command + [
+                        'out' => $output,
+                    ];
                 }
-            );
+                $progress->setProgress($i ++);
+            }
+            $progress->clear();
+        } else {
+            $process->enableAsync();
+            foreach ($commands as $command) {
+                $promises[] = $process->executeAsync($command['cmd'], $command['dir'])->then(
+                    function (Process $process) use (&$errors, $command) {
+                        if ($process->getExitCode() > 0) {
+                            $errors[] = $command + [
+                                'out' => $process->getOutput() . $process->getErrorOutput(),
+                            ];
+                        }
+                    }
+                );
+            }
+            $this->executeCommands($promises, $process);
         }
 
-        $this->executeCommands($promises, $process);
+        return $errors;
+    }
+
+    public function install(array $packages, string $options = '', bool $async = true): int
+    {
+        $commands = [];
+        foreach ($packages as $package) {
+            $pkgDir = realpath($package->getDistUrl());
+            $cmd = 'rm -rf vendor composer.lock';
+            $cmd .= ' && composer install -n ' . $options;
+            $commands[] = [
+                'pkg' => $package,
+                'cmd' => $cmd,
+                'dir' => $pkgDir,
+            ];
+        }
+        $errors = $this->exec($commands, $async);
 
         foreach ($errors as $error) {
             $this->io->write('<error> ' . $error['pkg']->getName() . ' </error>');
             $this->io->write('<info> cmd: ' . $error['cmd'] . ' </info>');
             $this->io->write('<info> dir: ' . $error['pkg']->getDistUrl() . ' </info>');
-            if ($error['out']) {
-                $this->io->write($error['out']);
-            }
-            if ($error['err']) {
-                $this->io->write($error['err']);
-            }
+            $this->io->write($error['out']);
         }
 
         return !empty($errors) ? 1 : 0;

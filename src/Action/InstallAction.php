@@ -14,12 +14,13 @@ class InstallAction extends AbstractAction
 
     /** @var PackageInterface[] */
     private array $packages;
+    private bool $async;
 
     /**
      * @param Utils $utils
      * @param PackageInterface[] $installPackages
      */
-    public function __construct(Utils $utils, array $installPackages)
+    public function __construct(Utils $utils, array $installPackages, bool $async = true)
     {
         $names = [];
         $this->packages = [];
@@ -29,12 +30,13 @@ class InstallAction extends AbstractAction
         }
         $this->names = implode(' ', $names);
         $this->utils = $utils;
+        $this->async = $async;
     }
 
     public function exec(IOInterface $io): void
     {
         $io->write('<info>installing packages:</info> ' . $this->names);
-        $res = $this->utils->install($this->packages);
+        $res = $this->utils->install($this->packages, '', $this->async);
         if ($res > 0) {
             throw new RuntimeException('installing failed', -1);
         }
@@ -45,7 +47,7 @@ class InstallAction extends AbstractAction
     public function undo(IOInterface $io): void
     {
         $io->write('<info>installing after rollback</info> ');
-        $res = $this->utils->install($this->packages);
+        $res = $this->utils->install($this->packages, '', $this->async);
         if ($res > 0) {
             throw new RuntimeException('installing after rollback failed', -2);
         }

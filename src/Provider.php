@@ -161,7 +161,12 @@ class Provider
             }
         }
         if ($io->isVeryVerbose()) {
-            $io->write("isLocked: $isLocked, isFresh: $isFresh, vendorExists: $vendorExists");
+            $io->write(sprintf(
+                "isLocked: %d, isFresh: %d, vendorExists: %d",
+                $isLocked,
+                $isFresh,
+                $vendorExists,
+            ));
         }
 
         if (!$isLocked || !$isFresh || !$vendorExists) {

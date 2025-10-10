@@ -88,7 +88,7 @@ class VersionCommand extends BaseCommand
             $blocked,
             $newVersion
         );
-        $installCmd = new InstallAction($utils, $install);
+        $installCmd = new InstallAction($utils, $install, false);
 
         $cmd = AbstractAction::emptyCmd();
         $cmd->setNext($backupCmd)
