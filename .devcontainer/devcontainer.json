@@ -1,0 +1,16 @@
+{
+	"name": "Unicorn PHP Plugin",
+	"image": "mcr.microsoft.com/devcontainers/php:8.2",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"xdebug.php-debug",
+				"bmewburn.vscode-intelephense-client"
+			]
+		}
+	},
+	"postCreateCommand": "sudo sed -i 's/xdebug.start_with_request = yes/xdebug.start_with_request = trigger/' /usr/local/etc/php/conf.d/xdebug.ini && composer install"
+}

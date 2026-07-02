@@ -42,6 +42,12 @@ But there are a number of limitations, such as:
 
 The `steady-ua/unicorn` plugin removes these restrictions and provides tools for analyzing and updating dependencies.
 
+**Why Unicorn instead of other Monorepo tools?**
+Unlike tools that merge all `composer.json` files into a single root file, `unicorn` works as a native Composer v2 plugin.
+- **Native Dependency Resolution**: All monorepo packages are registered in a local Composer registry. This delegates validation entirely to Composer's native SAT solver. Composer will naturally prevent version conflicts (e.g., trying to install different versions of a third-party library across the monorepo) and will automatically detect and prevent circular dependencies during installation.
+- **Isolated Contexts**: Each package retains its own independent `composer.json` and context, making packages truly portable and avoiding the "one huge vendor dir" issue for development.
+- **Smart CI capabilities**: Commands like `uni:run` allow you to execute scripts (e.g., tests or linters) recursively up the dependency tree, ensuring that changes in a base package don't break downstream dependents without having to run tests for the entire monorepo.
+
 In the root folder, you need to place the `unicorn.json` file.
 It describes all the common repositories.
 ```json
@@ -158,6 +164,11 @@ Shows which packages cause the given package to be installed.
 ### composer uni:why-not
 
 Shows which packages prevent the given package from being installed.
+
+### composer uni:server
+
+Starts a local HTTP server (default port 8067) providing a web UI to visually analyze the dependency graph of your monorepo. 
+It uses an interactive Mermaid diagram to visualize package relationships, allowing you to easily navigate up and down the dependency tree.
 
 ### composer uni:show
 
