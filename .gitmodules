@@ -1,0 +1,3 @@
+[submodule "tests/Fixtures/demo"]
+	path = tests/Fixtures/demo
+	url = https://github.com/SteadyUA/unicorn-demo.git
