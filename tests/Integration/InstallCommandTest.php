@@ -12,8 +12,8 @@ class InstallCommandTest extends IntegrationTestCase
         // Assert
         $this->assertTrue($process->isSuccessful(), "Command failed. Output: \n" . $process->getErrorOutput() . "\n" . $process->getOutput());
         
-        // Assert uni_vendor exists
-        $this->assertDirectoryExists($this->fixtureDir . '/uni_vendor');
+        // Assert vendor exists
+        $this->assertDirectoryExists($this->fixtureDir . '/vendor');
         
         // Assert logger and database symlinks exist in web app
         $webVendorLoggerPath = $this->fixtureDir . '/apps/web/vendor/demo/logger';

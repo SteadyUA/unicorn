@@ -36,7 +36,7 @@ return Tpl::extends('_main.php')
                 /** @var Package $pkg */
                 $package = [
                     'namespace' => implode('<br/>', $pkg->namespaces()),
-                    'path' => str_replace('uni_vendor/', '<span class="uni">uni_vendor</span>/', $pkg->path()),
+                    'path' => preg_replace('#^vendor/#', '<span class="uni">vendor</span>/', $pkg->path()),
                     'dep' => count($pkg->depends()),
                     'req'=> count($pkg->require()),
                     'ver' => $pkg->version(),

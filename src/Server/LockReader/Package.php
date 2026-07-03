@@ -86,7 +86,7 @@ class Package
             $path = str_replace('./', '', $url);
             $this->isLocal = true;
         } else {
-            $path = 'uni_vendor/' . $this->name;
+            $path = 'vendor/' . $this->name;
         }
 
         $this->path = $path;

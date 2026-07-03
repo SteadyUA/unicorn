@@ -48,9 +48,12 @@ class Provider
         $path = $cwd;
         $home = realpath(getenv('HOME') ?: getenv('USERPROFILE') ?: '/');
         while (dirname($path) !== $path && $path != $home) {
-            $unicornJsonFile = $path . '/unicorn.json';
+            $unicornJsonFile = $path . '/composer.json';
             if (file_exists($unicornJsonFile)) {
-                return $unicornJsonFile;
+                $config = (new JsonFile($unicornJsonFile))->read();
+                if (isset($config['type']) && $config['type'] === 'monorepo') {
+                    return $unicornJsonFile;
+                }
             }
             $path = dirname($path);
         }
@@ -65,7 +68,7 @@ class Provider
 
     private function getInstalledInfo(): ?array
     {
-        $path = $this->getDir() . '/uni_vendor/composer/installed.php';
+        $path = $this->getDir() . '/vendor/composer/installed.php';
         if (file_exists($path)) {
             $installedInfo = include $path;
             return $installedInfo['versions'];
@@ -82,7 +85,7 @@ class Provider
 
         $uniRepoCfg = [
             'type' => 'path',
-            'url' => $this->relative($this->getDir() . '/uni_vendor/*/*'),
+            'url' => $this->relative($this->getDir() . '/vendor/*/*'),
             'options' => ['versions' => []],
         ];
         foreach ($this->getInstalledInfo() ?? [] as $packageName => $info) {
@@ -291,7 +294,7 @@ class Provider
             'type' => 'metapackage',
             'require' => [],
             'config' => [
-                'vendor-dir' => $unicornDir . '/uni_vendor',
+                'vendor-dir' => $unicornDir . '/vendor',
             ],
         ];
 
@@ -324,7 +327,7 @@ class Provider
         }
 
         // init locker
-        $lockFile = new JsonFile($unicornDir . '/unicorn.lock', null, $io);
+        $lockFile = new JsonFile($unicornDir . '/composer.lock', null, $io);
         $locker = new Locker(
             $io,
             $lockFile,

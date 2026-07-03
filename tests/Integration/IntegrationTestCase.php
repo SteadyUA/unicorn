@@ -25,7 +25,7 @@ abstract class IntegrationTestCase extends TestCase
         // We do this in setUp so the files remain after the test for inspection.
         // NOTE: PHPUnit runs tests sequentially by default. Do not enable parallel execution 
         // for these tests to avoid race conditions on the fixture folder!
-        $this->removeDirectory($this->fixtureDir . '/uni_vendor');
+        $this->removeDirectory($this->fixtureDir . '/vendor');
         
         // Dynamically find and remove all vendor directories within the fixture (e.g., apps/*/vendor, packages/*/vendor)
         $vendors = glob($this->fixtureDir . '/*/*/vendor', GLOB_ONLYDIR);
@@ -35,8 +35,8 @@ abstract class IntegrationTestCase extends TestCase
             }
         }
         
-        if (file_exists($this->fixtureDir . '/unicorn.lock')) {
-            unlink($this->fixtureDir . '/unicorn.lock');
+        if (file_exists($this->fixtureDir . '/composer.lock')) {
+            unlink($this->fixtureDir . '/composer.lock');
         }
 
 

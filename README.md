@@ -9,7 +9,7 @@ Adds tools for working with shared dependencies.
 3. [Documentation](#documentation)
 4. [Usage](#usage)
 5. [Commands](#commands)
-6. [The unicorn.json schema](#the-unicornjson-schema)
+6. [The root composer.json schema](#the-root-composerjson-schema)
 
 ## Concept
 
@@ -31,7 +31,7 @@ Both projects use common packages placed in the `packages` directory
         composer.json
     bar/
         composer.json
- unicorn.json
+ composer.json
 ```
 
 `composer` - provides the ability to include local packages by specifying your own `path` repository.\
@@ -49,10 +49,13 @@ Unlike tools that merge all `composer.json` files into a single root file, `unic
 - **Isolated Contexts**: Each package retains its own independent `composer.json` and context, making packages truly portable and avoiding the "one huge vendor dir" issue for development.
 - **Smart CI capabilities**: Commands like `uni:run` allow you to execute scripts (e.g., tests or linters) recursively up the dependency tree, ensuring that changes in a base package don't break downstream dependents without having to run tests for the entire monorepo.
 
-In the root folder, you need to place the `unicorn.json` file.
-It describes all the common repositories.
+In the root folder, you need to place a `composer.json` file.
+Since this file acts merely as a monorepo definition rather than a standard package, it must include `"type": "monorepo"`. Standard package fields like `name`, `version`, and `require` will be ignored and are not required.
+Its primary purpose is to define the `repositories`—the paths where your local packages are located.
+**Important**: Each of these local packages must use semantic versioning by including a `"version"` field in its own `composer.json` file (e.g., `"version": "1.0.0"`).
 ```json
 {
+    "type": "monorepo",
     "repositories": [
         {
             "type": "path",
@@ -74,13 +77,13 @@ It describes all the common repositories.
 Now any local package can include packages from these repositories.\
 No more need to describe the `path` repositories in each package.
 
-A shared folder `uni_vendor` is created where all required packages are installed.\
+A shared folder `vendor` is created where all required packages are installed.\
 All dependent packages create symbolic links to them.
 
 This is to ensure that all dependencies use the same version.\
 And it speeds up installation.
 
-The used versions are fixed in the `unicorn.lock` file and will be used during installation.
+The used versions are fixed in the `composer.lock` file and will be used during installation.
 
 > When deploying an application, instead of symbolic links, you can copy the necessary packages.\
 Command [composer uni:build](#composer-unibuild)
@@ -104,7 +107,7 @@ composer global require steady-ua/unicorn
 
 ## Usage
 
-After creating the `unicorn.json` file, just use `composer` as usual.
+After creating the root `composer.json` file, just use `composer` as usual.
 
 ## Documentation
 
@@ -113,9 +116,9 @@ For a detailed guide on how to work with Unicorn, check out the [docs/](./docs) 
 - [Development Workflow](./docs/02-workflow.md)
 - [Commands Reference](./docs/03-commands.md)
 
-The `unicorn.lock` file is recommended to be kept under a version control system (eg GIT).
-The `uni_vendor` directory, like the `vendor` directories, is recommended to be excluded.
-The generated `composer.lock` files should also be excluded.
+The root `composer.lock` file is recommended to be kept under a version control system (eg GIT).
+The root `vendor` directory, like package `vendor` directories, is recommended to be excluded.
+The generated package-level `composer.lock` files should also be excluded.
 
 If a version conflict occurs when including a dependent package, an error will be displayed.
 
@@ -131,4 +134,4 @@ The `unicorn` plugin provides many commands for interacting with your monorepo, 
 
 For the full list of commands and their options, see the **[Commands Reference](./docs/03-commands.md)**.
 
-For details on the `unicorn.json` schema (including `build-install-options` and `post-update-scripts`), see the **[Getting Started Guide](./docs/01-getting-started.md)**.
+For details on the root `composer.json` schema (including `build-install-options` and `post-update-scripts`), see the **[Getting Started Guide](./docs/01-getting-started.md)**.

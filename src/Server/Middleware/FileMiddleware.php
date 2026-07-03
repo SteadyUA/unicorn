@@ -15,7 +15,7 @@ class FileMiddleware implements Middleware
 
     public function handle(array $params, callable $next): array
     {
-        $requestPath = $this->httpRootDir . '/' . substr($_SERVER['SCRIPT_NAME'], 1);
+        $requestPath = str_replace('/index.php', '/', $this->httpRootDir . '/' . substr($_SERVER['SCRIPT_NAME'], 1));
         if (!(file_exists($requestPath) && !is_dir($requestPath))) {
             return $next($params);
         }

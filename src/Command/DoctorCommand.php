@@ -41,7 +41,7 @@ class DoctorCommand extends BaseCommand
 
         if (!$this->provider->isActive()) {
             $output->writeln("\n<error>Monorepo root not found.</error>");
-            $output->writeln("Could not find unicorn.json in the current or parent directories.");
+            $output->writeln("Could not find a composer.json with type=monorepo in the current or parent directories.");
             return self::SUCCESS;
         }
 
@@ -52,9 +52,9 @@ class DoctorCommand extends BaseCommand
         $json = new JsonFile($jsonPath);
         try {
             $config = $json->read();
-            $output->writeln("<info>Config:</info> unicorn.json is valid.");
+            $output->writeln("<info>Config:</info> monorepo root composer.json is valid.");
         } catch (\Exception $e) {
-            $output->writeln("\n<error>unicorn.json is invalid: " . $e->getMessage() . "</error>");
+            $output->writeln("\n<error>monorepo root composer.json is invalid: " . $e->getMessage() . "</error>");
             return self::FAILURE;
         }
 
@@ -84,6 +84,7 @@ class DoctorCommand extends BaseCommand
             }
         }
 
+        $notStable = $this->provider->getMinimumStability() !== 'stable';
         foreach ($baseDirs as $absBaseDir => $originalUrl) {
             if (!is_dir($absBaseDir)) {
                 continue;
@@ -117,7 +118,7 @@ class DoctorCommand extends BaseCommand
                             $jsonData = $jsonFile->read();
                             
                             // Inject dummy version if missing, as path repos do this dynamically
-                            if (!isset($jsonData['version'])) {
+                            if (!isset($jsonData['version']) && $notStable) {
                                 $jsonData['version'] = '1.0.0';
                             }
 
@@ -155,7 +156,7 @@ class DoctorCommand extends BaseCommand
         }
 
         $output->writeln("\n<info>Checking initialization...</info>");
-        if (!file_exists($root . '/unicorn.lock') && !is_dir($root . '/uni_vendor')) {
+        if (!file_exists($root . '/composer.lock') && !is_dir($root . '/vendor')) {
             $output->writeln("  <error>Not initialized.</error> Run <comment>uni:install</comment> to initialize the monorepo.");
             return self::SUCCESS;
         }

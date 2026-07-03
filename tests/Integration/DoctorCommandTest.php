@@ -13,6 +13,7 @@ class DoctorCommandTest extends IntegrationTestCase
         mkdir($orphanDir, 0777, true);
         file_put_contents($orphanDir . '/composer.json', json_encode([
             'name' => 'demo/orphan',
+            'version' => '0.0.1',
             'type' => 'library'
         ]));
 
@@ -26,10 +27,6 @@ class DoctorCommandTest extends IntegrationTestCase
         mkdir($nonGlobDir, 0777, true);
 
         try {
-            // First we need to install to make sure the orphan is recognized by uni_vendor
-            // Because integration tests use the existing fixture which has no uni_vendor initially,
-            // or wait, tests/Fixtures/demo has been initialized already if another test ran.
-            // But we created demo/orphan just now, so we need to run uni:install to rebuild vendor.
             $installProcess = $this->runComposerCommand(['uni:install']);
             if (!$installProcess->isSuccessful()) {
                 $this->fail("Failed to install demo/orphan: " . $installProcess->getErrorOutput());
@@ -41,7 +38,7 @@ class DoctorCommandTest extends IntegrationTestCase
             
             $this->assertTrue($process->isSuccessful(), "Doctor command failed. Output:\n" . $output);
 
-            $this->assertStringContainsString('unicorn.json is valid', $output);
+            $this->assertStringContainsString('monorepo root composer.json is valid', $output);
             
             // Should find valid packages
             $this->assertStringContainsString('Found', $output);
@@ -59,7 +56,6 @@ class DoctorCommandTest extends IntegrationTestCase
             $this->removeDirectory($orphanDir);
             $this->removeDirectory($misplacedDir);
             $this->removeDirectory($nonGlobDir);
-            // Run update to remove the orphan from uni_vendor
             $this->runComposerCommand(['uni:install']);
         }
     }

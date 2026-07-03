@@ -62,7 +62,7 @@ class BuildCommand extends BaseCommand
             }
         }
         if (!isset($package)) {
-            $output->writeln('<error>Not found: ' . $packageName . '</error>');
+            $output->writeln('<error>Unknown package: ' . $packageName . '</error>');
             return self::FAILURE;
         }
         $dir = $input->getArgument('directory');

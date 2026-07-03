@@ -20,7 +20,11 @@ return Tpl::extends('_diagram.php')
                     <dt>Namespace:</dt>
                     <dd><?=implode(', ', $package->namespaces())?></dd>
                     <dt>Path:</dt>
-                    <dd><span class="uni-root"><?=$_GET['r']?>/</span><?=str_replace('uni_vendor/', '<span class="uni">uni_vendor</span>/', $package->path())?></dd>
+                    <dd><span class="uni-root"><?=$_GET['r']?>/</span><?=preg_replace(
+                        '#^vendor/#',
+                        '<span class="uni">vendor</span>/',
+                        $package->path(),
+                    )?></dd>
                     <?php if ($package->authors()) { ?>
                         <dt>Authors:</dt>
                         <dd><?php
