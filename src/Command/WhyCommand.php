@@ -20,7 +20,7 @@ class WhyCommand extends BaseDependencyCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         parent::configure();
         $this

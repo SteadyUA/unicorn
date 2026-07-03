@@ -17,6 +17,7 @@ use SteadyUa\Unicorn\Command\NamespaceCommand;
 use SteadyUa\Unicorn\Command\WhyCommand;
 use SteadyUa\Unicorn\Command\ServerCommand;
 use SteadyUa\Unicorn\Command\VersionCommand;
+use SteadyUa\Unicorn\Command\DoctorCommand;
 
 class Plugin implements PluginInterface, Capable, CommandProvider
 {
@@ -32,7 +33,7 @@ class Plugin implements PluginInterface, Capable, CommandProvider
         $task = $GLOBALS['argv'][1] ?? 'help';
         if (in_array(
             $task,
-            ['help', 'run', 'run-script', 'exec', 'config', 'about', 'uni:version', 'uni:update']
+            ['help', 'run', 'run-script', 'exec', 'config', 'about', 'uni:version', 'uni:update', 'uni:doctor']
         )) {
             return;
         }
@@ -42,11 +43,15 @@ class Plugin implements PluginInterface, Capable, CommandProvider
 
     public function getCommands(): array
     {
+        $commands = [
+            new DoctorCommand(self::$provider),
+        ];
+
         if (!self::$provider->isActive()) {
-            return [];
+            return $commands;
         }
 
-        return [
+        return array_merge($commands, [
             new WhyCommand(self::$provider),
             new WhyNotCommand(self::$provider),
             new ShowCommand(self::$provider),
@@ -57,7 +62,7 @@ class Plugin implements PluginInterface, Capable, CommandProvider
             new UpdateCommand(self::$provider),
             new ServerCommand(self::$provider),
             new BuildCommand(self::$provider),
-        ];
+        ]);
     }
 
     public function getCapabilities(): array

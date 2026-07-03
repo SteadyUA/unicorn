@@ -30,7 +30,7 @@ class VersionCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:version')
@@ -39,7 +39,7 @@ class VersionCommand extends BaseCommand
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $package = $this->provider->composer()->getPackage();
         $localRepo = $this->provider->localRepo();
@@ -105,7 +105,7 @@ class VersionCommand extends BaseCommand
         return AbstractAction::runCmd($cmd, $io);
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
     }
 }

@@ -20,7 +20,7 @@ class BuildCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:build')
@@ -88,11 +88,13 @@ class BuildCommand extends BaseCommand
         }
         $cmdList = [];
         if (file_exists($dir) && $input->getOption('force')) {
-            $cmdList[] = 'rm -rf ' . $dir;
+            $cmdList[] = 'rm -rf ' . escapeshellarg($dir);
         }
-        $cmdList[] = 'composer create-project ' . $packageName . ' ' . $dir . ' --no-install ' . $repository;
-        $cmdList[] = 'rm -rf ' . $dir . '/vendor ' . $dir . '/composer.lock';
-        $cmdList[] = 'composer install ' . $this->provider->getBuildInstallOptions() . ' -d ' . $dir;
+        
+        $stability = escapeshellarg($this->provider->getMinimumStability());
+        $cmdList[] = 'composer create-project -s ' . $stability . ' ' . $packageName . ' ' . escapeshellarg($dir) . ' --no-install ' . $repository;
+        $cmdList[] = 'rm -rf ' . escapeshellarg($dir) . '/vendor ' . escapeshellarg($dir) . '/composer.lock';
+        $cmdList[] = 'composer install ' . $this->provider->getBuildInstallOptions() . ' -d ' . escapeshellarg($dir);
 
         Platform::putEnv('UNI_BUILD', '1');
         Platform::putEnv('UNI_PATH', $this->provider->unicornJsonFile());
@@ -102,7 +104,7 @@ class BuildCommand extends BaseCommand
             : self::SUCCESS;
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
     }
 }

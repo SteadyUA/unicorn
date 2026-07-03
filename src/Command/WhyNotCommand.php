@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class WhyNotCommand extends WhyCommand
 {
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:why-not')

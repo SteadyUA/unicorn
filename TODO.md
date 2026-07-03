@@ -18,3 +18,6 @@
 
 ## Orphan Packages Check
 - Implement a command (e.g., `composer uni:check-orphans`) to find packages inside `./packages/*` that are not required by any root application (e.g., `web` or `worker`) and are not marked as public libraries. This will help identify and clean up dead code.
+
+## Cross-Platform Compatibility
+- Implement and test full support for Windows operating systems (currently symlinks and path resolution might be Unix-specific).

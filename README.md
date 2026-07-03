@@ -6,9 +6,10 @@ Adds tools for working with shared dependencies.
 
 1. [Concept](#concept)
 2. [Installation](#installation)
-3. [Usage](#usage)
-4. [Commands](#commands)
-5. [The unicorn.json shema](#the-unicornjson-schema)
+3. [Documentation](#documentation)
+4. [Usage](#usage)
+5. [Commands](#commands)
+6. [The unicorn.json schema](#the-unicornjson-schema)
 
 ## Concept
 
@@ -86,16 +87,31 @@ Command [composer uni:build](#composer-unibuild)
 
 ## Installation
 
-Compatible with `composer` version `2.3` or later.\
-Currently does not work on `windows` operating system.\
+Compatible with `composer` version `2.3` or later.
+Currently does not work on `windows` operating system.
 The plugin must be installed globally.
-```
+```bash
+# Optional: Pre-approve the plugin to avoid interactive prompts in CI/CD environments
+composer global config allow-plugins.steady-ua/unicorn true
+
 composer global require steady-ua/unicorn
 ```
+
+> **Note for Composer 2.8+**: If you frequently run commands inside monorepo subdirectories that lack their own `composer.json`, Composer may prompt you with `"No composer.json in current directory, do you want to use the one at /path/to/parent?"`. You can disable this prompt and default to the global installation by running:
+> ```bash
+> composer config -g use-parent-dir false
+> ```
 
 ## Usage
 
 After creating the `unicorn.json` file, just use `composer` as usual.
+
+## Documentation
+
+For a detailed guide on how to work with Unicorn, check out the [docs/](./docs) directory:
+- [Getting Started](./docs/01-getting-started.md)
+- [Development Workflow](./docs/02-workflow.md)
+- [Commands Reference](./docs/03-commands.md)
 
 The `unicorn.lock` file is recommended to be kept under a version control system (eg GIT).
 The `uni_vendor` directory, like the `vendor` directories, is recommended to be excluded.
@@ -105,142 +121,14 @@ If a version conflict occurs when including a dependent package, an error will b
 
 Use next commands to solve problems.
 
-## Commands
+## Commands & Configuration
 
-### composer uni:install
+The `unicorn` plugin provides many commands for interacting with your monorepo, such as:
+- `uni:install` / `uni:update` - Manage dependencies across all packages.
+- `uni:run` - Execute scripts recursively.
+- `uni:doctor` - Diagnose the state of the monorepo and detect issues (like orphaned dependencies or invalid `composer.json` files).
+- `uni:server` - Visually explore the dependency graph.
 
-    composer uni:install [options] [--] [<packages>...]
+For the full list of commands and their options, see the **[Commands Reference](./docs/03-commands.md)**.
 
-When called without parameters. If the `uni_vendor` directory does not exist, install all dependencies.
-Otherwise, it will check the consistency of package requirements.
-
-You can specify a list of local packages. In this case, for each package, the command will be executed
-`composer install`
-
-### composer uni:update
-
-    compose uni:update <packages>...
-
-Update required packages in all dependents.
-
-With this command, you can also change the constraint. e.g. `foo/bar:^1.0 or foo/bar=^1.0 or "foo/bar ^1.0"`.
-This will edit the `composer.json` files.
-
-During the execution, the `composer.json` files will be changed.\
-In case of an error, the files will be returned to their original state.
-
-Additionally, [you can specify](#post-update-scripts) a list of scripts that will be executed after the changes.
-
-### composer uni:version
-
-    uni:version [ major | minor | patch ]
-
-Bump version of package.
-
-Upgrades a package and updates all dependencies.
-
-During the execution, the `composer.json` files will be changed.\
-In case of an error, the files will be returned to their original state.
-
-Additionally, [you can specify](#post-update-scripts) a list of scripts that will be executed after the changes.
-
-### composer uni:run
-
-    uni:run [options] [--] [<script>...]
-
-Runs the scripts defined in unicorn.json, for all packages dependent on the current.
-
-#### Options:
-- `-s, --self` Also run script for the current package.
-- `-r, --recursive` Recursively resolves dependencies up to the root.
-- `-a, --all` Run for all local packages.
-- `-l, --list` List scripts.
-
-
-### composer uni:why
-    
-Shows which packages cause the given package to be installed.
-
-### composer uni:why-not
-
-Shows which packages prevent the given package from being installed.
-
-### composer uni:server
-
-Starts a local HTTP server (default port 8067) providing a web UI to visually analyze the dependency graph of your monorepo. 
-It uses an interactive Mermaid diagram to visualize package relationships, allowing you to easily navigate up and down the dependency tree.
-
-### composer uni:show
-
-Shows information about packages.
-
-### composer uni:namespace
-
-Suggest package by namespace pattern.
-
-### composer uni:build
-
-    composer uni:build <package> <directory>
-
-Builds a local package in the specified directory.
-All required packages will be copied instead of symlinked.
-
-It is [possible to set options](#build-install-options) for executing the command `composer install`
-
-## The unicorn.json schema
-
-Located at the root of the mono-repository.
-
-### repositories
-
-Custom package repositories to use.
-
-The format is the same as [Composer](https://getcomposer.org/doc/04-schema.md#repositories)
-
-Example:
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "./web-api-project"
-        },
-        {
-            "type": "path",
-            "url": "./packages/*"
-        }
-    ]
-}
-```
-> You can group packages into subdirectories.\
-> Then the url will be like this `"url": "./packages/*/*"`
-
-### extra
-
-#### build-install-options
-Type: string
-
-Additional options to be passed to the command `composer install` for [uni:build](#composer-unibuild)
-
-Example:
-```json
-{
-    "extra": {
-        "build-install-options": "--no-dev --optimize-autoloader"
-    }
-}
-```
-
-#### post-update-scripts
-Type: array
-
-The name of the scripts that will be executed for all changed packages during the execution of commands: [uni:update](#composer-uniupdate), [uni:version](#composer-universion).
-
-Example:
-```json
-{
-    "extra": {
-        "post-update-scripts": ["test", "phpstan"]
-    }
-}
-```
+For details on the `unicorn.json` schema (including `build-install-options` and `post-update-scripts`), see the **[Getting Started Guide](./docs/01-getting-started.md)**.

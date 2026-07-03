@@ -21,7 +21,7 @@ class RunCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:run')
@@ -124,7 +124,7 @@ class RunCommand extends BaseCommand
         return 0;
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
     }
 }

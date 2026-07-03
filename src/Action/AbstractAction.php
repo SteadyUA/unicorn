@@ -42,10 +42,10 @@ abstract class AbstractAction
                 $io->write('<error> ' . $ex->getMessage() . ' </error> stopped');
             }
 
-            return false;
+            return 1;
         }
 
-        return true;
+        return 0;
     }
 
     public function setNext(AbstractAction $next): AbstractAction

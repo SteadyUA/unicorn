@@ -22,7 +22,32 @@ git submodule update --init --recursive
 
 ### Running Tests
 
-*(Instructions for running PHPUnit will go here once the test suite is fully set up)*
+To run the automated integration tests:
+
+```bash
+vendor/bin/phpunit
+```
+
+### Manual Testing
+
+For isolation, it is highly recommended to perform manual testing inside a **devcontainer**. Since Composer plugins must be installed globally, a devcontainer ensures your local machine's global Composer setup remains unaffected.
+
+To manually test changes during development, configure your global Composer to use the local source code via a path repository. This creates a symlink, so any changes you make to the code are immediately available.
+
+```bash
+# 1. Add the local directory as a repository in the global config
+composer global config repositories.unicorn path /workspaces/unicorn
+
+# 2. Install the plugin globally from the local source (via symlink)
+composer global require steady-ua/unicorn:@dev
+```
+
+Once installed, you can navigate to the demo fixture and run commands to see your changes in action:
+
+```bash
+cd /workspaces/unicorn/tests/Fixtures/demo
+composer uni:doctor
+```
 
 ### Updating the Demo Submodule
 

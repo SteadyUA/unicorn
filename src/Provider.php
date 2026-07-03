@@ -294,6 +294,13 @@ class Provider
                 'vendor-dir' => $unicornDir . '/uni_vendor',
             ],
         ];
+
+        if (isset($this->config['minimum-stability'])) {
+            $uniConfig['minimum-stability'] = $this->config['minimum-stability'];
+        }
+        if (isset($this->config['prefer-stable'])) {
+            $uniConfig['prefer-stable'] = $this->config['prefer-stable'];
+        }
         $composer = (new Factory())->createComposer($io, $uniConfig, true, $unicornDir);
 
         // init repos
@@ -426,6 +433,11 @@ class Provider
     public function getBuildInstallOptions(): string
     {
         return $this->config['extra']['build-install-options'] ?? '';
+    }
+
+    public function getMinimumStability(): string
+    {
+        return $this->config['minimum-stability'] ?? 'stable';
     }
 
     public function getPostUpdateScripts(): array

@@ -20,7 +20,7 @@ class NamespaceCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:namespace')
@@ -87,7 +87,7 @@ class NamespaceCommand extends BaseCommand
         return self::SUCCESS;
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
     }
 }

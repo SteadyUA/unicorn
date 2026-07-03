@@ -19,7 +19,7 @@ class InstallCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('uni:install')
@@ -74,7 +74,7 @@ class InstallCommand extends BaseCommand
         return $utils->install($packages);
     }
 
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
     }
 }
