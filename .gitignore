@@ -2,5 +2,4 @@
 /composer.lock
 /vendor/
 /ui/script/cache*
-.phpunit.cache
-.phpunit.composer.cache
+/.cache

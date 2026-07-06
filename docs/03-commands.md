@@ -43,6 +43,14 @@ Prepares a package for production deployment.
 
 ---
 
+### `composer uni:split`
+Splits local monorepo packages into their own independent remote Git repositories.
+- Essential for mirroring packages to read-only repositories (like `github.com/my-org/logger`).
+- Automatically handles Git history extraction and tag pushing.
+- For a full setup guide, see [Monorepo Split](04-monorepo-split.md).
+
+---
+
 ### `composer uni:doctor`
 Diagnoses the state of the monorepo and detects configuration issues.
 - Validates the root `composer.json` configuration.

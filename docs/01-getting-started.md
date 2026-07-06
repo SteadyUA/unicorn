@@ -51,13 +51,17 @@ Unicorn supports specific configuration options defined in the `extra` block of 
         "post-update-scripts": [
             "test",
             "lint"
-        ]
+        ],
+        "uni-split": {
+            "remote-pattern": "https://github.com/my-org/{name}.git"
+        }
     }
 }
 ```
 
 - **`build-install-options`**: A string containing additional flags passed to Composer during the `uni:build` command (e.g., `--no-dev --optimize-autoloader`).
 - **`post-update-scripts`**: An array of script names that will be automatically executed after a successful `uni:update` or `uni:version` for the affected packages. Note that a script will only run in an affected package if that package has the script defined in its own `composer.json`. It is recommended to use consistent script names (e.g., `"test"`, `"lint"`) across all your packages.
+- **`uni-split`**: Configuration for automating the split of your local packages into read-only remote repositories. See the [Monorepo Split Guide](04-monorepo-split.md) for full details.
 
 ### Typical Directory Structure
 

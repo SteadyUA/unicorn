@@ -4,10 +4,10 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use Symfony\Component\Process\Process;
 
-$composerHome = dirname(__DIR__) . '/.phpunit.composer.cache';
+$composerHome = dirname(__DIR__) . '/.cache/composer';
+putenv('COMPOSER_HOME=' . $composerHome);
 
-// Only create and run composer global update if it doesn't exist
-// If you need to refresh it, you can delete the .phpunit.composer.cache folder or its contents
+// If you need to refresh it, you can delete the .cache/composer folder or its contents
 if (!is_dir($composerHome) || !file_exists($composerHome . '/composer.json')) {
     echo "Initializing global COMPOSER_HOME for tests...\n";
     mkdir($composerHome, 0777, true);

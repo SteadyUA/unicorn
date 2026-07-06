@@ -18,6 +18,7 @@ use SteadyUa\Unicorn\Command\WhyCommand;
 use SteadyUa\Unicorn\Command\ServerCommand;
 use SteadyUa\Unicorn\Command\VersionCommand;
 use SteadyUa\Unicorn\Command\DoctorCommand;
+use SteadyUa\Unicorn\Command\SplitCommand;
 
 class Plugin implements PluginInterface, Capable, CommandProvider
 {
@@ -62,6 +63,7 @@ class Plugin implements PluginInterface, Capable, CommandProvider
             new UpdateCommand(self::$provider),
             new ServerCommand(self::$provider),
             new BuildCommand(self::$provider),
+            new SplitCommand(self::$provider),
         ]);
     }
 

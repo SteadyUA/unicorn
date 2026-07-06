@@ -453,6 +453,11 @@ class Provider
         return $scripts;
     }
 
+    public function getSplitConfig(): array
+    {
+        return $this->config['extra']['uni-split'] ?? [];
+    }
+
     public function composer(): Composer
     {
         return $this->composer;
