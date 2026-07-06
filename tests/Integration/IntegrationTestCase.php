@@ -25,26 +25,13 @@ abstract class IntegrationTestCase extends TestCase
         // We do this in setUp so the files remain after the test for inspection.
         // NOTE: PHPUnit runs tests sequentially by default. Do not enable parallel execution 
         // for these tests to avoid race conditions on the fixture folder!
-        $this->removeDirectory($this->fixtureDir . '/vendor');
+        $process = new Process(['git', 'clean', '-fdx']);
+        $process->setWorkingDirectory($this->fixtureDir);
+        $process->run();
         
-        // Dynamically find and remove all vendor directories within the fixture (e.g., apps/*/vendor, packages/*/vendor)
-        $vendors = glob($this->fixtureDir . '/*/*/vendor', GLOB_ONLYDIR);
-        if (is_array($vendors)) {
-            foreach ($vendors as $vendorDir) {
-                $this->removeDirectory($vendorDir);
-            }
-        }
-        
-        if (file_exists($this->fixtureDir . '/composer.lock')) {
-            unlink($this->fixtureDir . '/composer.lock');
-        }
-
-
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
+        $process = new Process(['git', 'checkout', '.']);
+        $process->setWorkingDirectory($this->fixtureDir);
+        $process->run();
     }
 
     protected function runComposerCommand(array $command): Process
