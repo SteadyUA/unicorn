@@ -2,6 +2,8 @@
 
 All Unicorn commands are prefixed with `uni:` and can be executed via the standard `composer` CLI.
 
+> **Tip**: You can use the standard Composer `-d` or `--working-dir` option with any command to specify the working directory without needing to `cd` into it (e.g., `composer uni:run test -d packages/logger`). This is especially useful for automation scripts.
+
 ---
 
 ### `composer uni:install [options] [--] [<packages>...]`
@@ -82,6 +84,14 @@ The interactive diagram shows only *direct* dependencies by default. For deeper 
 
 ### `composer uni:version [ major | minor | patch ]`
 Bumps the version of the current package and automatically updates the requirement constraint in all packages that depend on it.
+
+This command will:
+1. Bump the version inside the target package's `composer.json`.
+2. Find all packages in the monorepo whose constraints for the target package no longer match the new version.
+3. Automatically update their `require` statements to match the new version (e.g., to `"^2.0"`).
+4. Perform a test installation to ensure the monorepo remains stable.
+5. Execute any scripts defined in `post-update-scripts` for the affected packages.
+6. Automatically roll back all version changes if any installation or script execution errors occur.
 
 ---
 
