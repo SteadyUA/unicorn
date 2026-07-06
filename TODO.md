@@ -16,8 +16,5 @@
 - Implement a feature to split monorepo packages into their own read-only remote repositories.
 - Could be implemented as a standalone command (e.g., `composer uni:split`) or via documentation/integration with existing splitters like `splitsh/lite` or GitHub Actions.
 
-## Orphan Packages Check
-- Implement a command (e.g., `composer uni:check-orphans`) to find packages inside `./packages/*` that are not required by any root application (e.g., `web` or `worker`) and are not marked as public libraries. This will help identify and clean up dead code.
-
 ## Cross-Platform Compatibility
 - Implement and test full support for Windows operating systems (currently symlinks and path resolution might be Unix-specific).

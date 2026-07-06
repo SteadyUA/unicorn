@@ -51,7 +51,32 @@ Diagnoses the state of the monorepo and detects configuration issues.
 ---
 
 ### `composer uni:server`
-Spins up a local HTTP web server (default port `8067`) to visually explore the monorepo's dependency graph. Uses Mermaid JS to render interactive architectural diagrams.
+Spins up a local HTTP web server (default port `8067`) to visually explore the monorepo's dependency graph. Uses Mermaid JS to render interactive architectural diagrams. You can customize the port by setting the `UNI_SERVER_PORT` environment variable.
+
+The server allows analyzing package dependencies and provides two main views depending on where the command is executed:
+
+#### 1. Package List View (running outside a package)
+When the server is launched from the root or outside a specific package directory, it displays a comprehensive package list:
+
+![Package List](img/server-package-list.jpg)
+
+- Includes **sorting and search** capabilities.
+- By default, **third-party and dev-dependencies are hidden** to keep the list clean.
+- A **filter in the top right corner** allows you to customize which packages are displayed.
+
+#### 2. Package Details View (running inside a local package)
+When the server is launched from within a local package directory, it focuses on that specific package:
+
+![Package Details](img/server-package.jpg)
+
+- Displays **author information**.
+- Lists **dependents** (packages that depend on the current one).
+- Lists **requirements** (packages the current package depends on).
+- Features an **interactive diagram** at the bottom for navigating between packages.
+
+The interactive diagram shows only *direct* dependencies by default. For deeper analysis, you can click the following links:
+- **Dependents from above**: Renders a full dependency tree from the top down to the target package.
+- **Requirements to the very**: Renders a diagram of all dependencies all the way down from the target package.
 
 ---
 
