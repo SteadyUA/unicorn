@@ -6,15 +6,20 @@ All Unicorn commands are prefixed with `uni:` and can be executed via the standa
 
 ---
 
-### `composer uni:install [options] [--] [<packages>...]`
+### `composer uni:install [<packages>...]`
+*(Alias: `composer uni:i`)*
+
 Initializes or restores the monorepo dependencies.
 - If called without parameters and the global `vendor` directory does not exist, it installs all dependencies for the entire monorepo.
 - If the global `vendor` directory exists, it verifies the consistency of package requirements against `composer.lock`.
 - If a list of local packages is provided, it behaves like running `composer install` inside each of those packages.
 
-> **Note**: If any of the local packages in your monorepo contains an invalid `composer.json` file (e.g., syntax errors, missing name, or invalid version constraints), the plugin might fail to initialize entirely, and Composer will output:
-> `There are no commands defined in the "uni" namespace.`
-> If you encounter this error, run `composer uni:doctor` to diagnose the state of your monorepo and pinpoint the invalid configurations.
+> **Important**: You should run this command every time you pull code changes during development (e.g., after `git pull`) to ensure that all local dependencies are properly symlinked and the dependencies tree is updated.
+
+**Example:**
+```bash
+composer uni:install
+```
 
 ---
 
@@ -22,24 +27,50 @@ Initializes or restores the monorepo dependencies.
 Updates the specified packages across all dependents in the monorepo.
 - Supports changing constraints on the fly: e.g., `composer uni:update "foo/bar:^1.0"` or `composer uni:update foo/bar=^1.0`.
 - Edits `composer.json` files safely (reverts them if the update fails).
-- Executes scripts defined in `post-update-scripts` (in the root `composer.json`) after a successful update.
+- Executes scripts defined in `post-update-scripts` (in the root `composer.json`) after a successful update. See [Additional Configuration Options](01-getting-started.md#additional-configuration-options) for an example.
+
+**Example:**
+```bash
+composer uni:update "guzzlehttp/guzzle ^7.0"
+```
 
 ---
 
-### `composer uni:run [options] [--] [<script>...]`
-Recursively resolves the dependency tree and executes the given script for all packages that depend on the current package. Essential for Smart CI pipelines.
-- **Options:**
-  - `-s, --self`: Also run the script for the current package.
-  - `-r, --recursive`: Recursively resolve dependencies all the way up to the root applications.
-  - `-a, --all`: Run the script for *all* local packages in the monorepo.
-  - `-l, --list`: List all available scripts.
+### `composer uni:run [options] <script>...`
+Executes the given script for packages that depend on the current target package. Essential for Smart CI pipelines to test downstream impacts.
+
+**Example:**
+```bash
+composer uni:run test
+```
+
+By default, scripts are run **only** for immediate dependents.
+For example, given the dependency chain: `application` -> `package A` -> `package B` -> `our target package`:
+- Running `uni:run test` inside `our target package` will execute the script **only for `package B`**.
+
+**Options:**
+- `-s, --self`: Also run the script for the current target package itself (e.g., runs for `package B` AND `our target package`). Standard practice assumes you run `composer run ...` for the target package directly, hence it's excluded by default.
+- `-r, --recursive`: Recursively resolve and run the script for all dependents up to the root (e.g., runs for `application`, `package A`, and `package B`).
+- `-a, --all`: Run the script for *all* local packages in the monorepo, regardless of the dependency tree.
+- `-l, --list`: List all available scripts.
 
 ---
 
-### `composer uni:build <package> <directory>`
+### `composer uni:build [options] [--] <package> <directory>`
 Prepares a package for production deployment.
-- Copies all required packages (both third-party and local) into the specified `<directory>` instead of symlinking them.
-- You can pass additional install flags (like `--no-dev --optimize-autoloader`) via the `build-install-options` config in the root `composer.json`.
+- **`<package>`**: The name of the local package you want to build (e.g., `my-org/web`).
+- **`<directory>`**: The target directory where the built application will be placed (e.g., `./dist/web`).
+- Copies all required packages (both third-party and local) into the specified `<directory>` instead of symlinking them, and automatically performs a `composer install`.
+- **Options:**
+  - `-f, --force`: Removes the target directory if it already exists before building.
+  - `--env-file`: Path to a file containing environment variables to load during the build process.
+  - `--env`: Pass environment variables directly as key=value pairs (e.g., `--env=APP_ENV=prod`). Can be specified multiple times.
+- You can pass additional install flags (like `--no-dev --optimize-autoloader`) via the `build-install-options` config in the root `composer.json` (see [Additional Configuration Options](./01-getting-started.md#additional-configuration-options) for an example).
+
+**Example:**
+```bash
+composer uni:build my-org/web ./dist/web
+```
 
 ---
 
@@ -47,7 +78,8 @@ Prepares a package for production deployment.
 Splits local monorepo packages into their own independent remote Git repositories.
 - Essential for mirroring packages to read-only repositories (like `github.com/my-org/logger`).
 - Automatically handles Git history extraction and tag pushing.
-- For a full setup guide, see [Monorepo Split](04-monorepo-split.md).
+
+For a full setup guide, see [Monorepo Split](04-monorepo-split.md).
 
 ---
 
@@ -102,6 +134,8 @@ This command will:
 6. Automatically roll back all version changes if any installation or script execution errors occur.
 
 ---
+
+> **Note**: The `uni:why`, `uni:why-not`, and `uni:show` commands are based on the built-in Composer commands (`why`, `why-not`, and `show`). Therefore, they fully support all standard options and flags of their parent commands.
 
 ### `composer uni:why <package>`
 Shows which packages in the monorepo cause the given package to be installed (upstream dependents).

@@ -39,7 +39,12 @@ class Plugin implements PluginInterface, Capable, CommandProvider
             return;
         }
 
-        self::$provider->setupUniComposer($io);
+        try {
+            self::$provider->setupUniComposer($io);
+        } catch (\Throwable $e) {
+            $io->writeError(" \xf0\x9f\xa6\x84 <error> Initialization error </error>");
+            $io->writeError('<error>' . $e->getMessage() . '</error>');
+        }
     }
 
     public function getCommands(): array

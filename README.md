@@ -5,11 +5,7 @@ Ensures the consistency of all dependencies on the same package version.\
 Adds tools for working with shared dependencies.
 
 1. [Concept](#concept)
-2. [Installation](#installation)
-3. [Documentation](#documentation)
-4. [Usage](#usage)
-5. [Commands](#commands)
-6. [The root composer.json schema](#the-root-composerjson-schema)
+2. [Documentation](#documentation)
 
 ## Concept
 
@@ -19,22 +15,23 @@ For example, we have two projects:
 
 Both projects use common packages placed in the `packages` directory
 
-```
- web/
-    index.php
-    composer.json
- worker/
-    console.php
-    composer.json
+```text
+ apps/
+    web/
+        index.php
+        composer.json
+    worker/
+        console.php
+        composer.json
  packages/
     foo/
         composer.json
     bar/
         composer.json
- composer.json
+ composer.json  # monorepo definition root config
 ```
 
-`composer` - provides the ability to include local packages by specifying your own `path` repository.\
+Raw `composer` - provides the ability to include local packages by specifying your own `path` repository.\
 But there are a number of limitations, such as:
 - in each `composer.json` file you must describe all local repositories.
 - each package has its own local file, and it is possible that packages of different versions are used.
@@ -45,69 +42,14 @@ The `steady-ua/unicorn` plugin removes these restrictions and provides tools for
 
 **Why Unicorn instead of other Monorepo tools?**
 Unlike tools that merge all `composer.json` files into a single root file, `unicorn` works as a native Composer v2 plugin.
-- **Native Dependency Resolution**: All monorepo packages are registered in a local Composer registry. This delegates validation entirely to Composer's native SAT solver. Composer will naturally prevent version conflicts (e.g., trying to install different versions of a third-party library across the monorepo) and will automatically detect and prevent circular dependencies during installation.
-- **Isolated Contexts**: Each package retains its own independent `composer.json` and context, making packages truly portable and avoiding the "one huge vendor dir" issue for development.
+- **Native Dependency Resolution**: All monorepo packages are registered in a local Composer registry. This delegates validation entirely to Composer's native SAT solver. To add a dependency, simply navigate to the needed package and run `composer require my/foo`. Composer will naturally prevent version conflicts (e.g., trying to install different versions of a third-party library across the monorepo) and will automatically detect and prevent circular dependencies during installation.
+- **Semantic Versioning at the Core**: The entire architecture revolves around semantic versioning. Each package must define its version in `composer.json` (e.g., `"version": "1.0.0"`). To simplify workflows, the `uni:version` command automates version bumping, updates the constraints in any dependent local packages, and runs configured tests or scripts. For external dependencies, the `uni:update` command simplifies third-party package migration by synchronizing updates and running tests across all dependent local packages.
+- **Dependency Analysis & Visualization**: Includes built-in commands like `uni:why` and `uni:why-not` to trace dependency paths across the monorepo, as well as an interactive browser-based dependency graph visualization using the `uni:server` command.
+- **Isolated Contexts**: For development, a shared `vendor` folder is created at the project root. However, packages remain self-sufficient. Each package retains its own `composer.json` and gets its own local `vendor` directory where only its explicitly required dependencies are installed via symlinks. This prevents accidental reliance on undeclared packages and allows you to run dependency analysis tools accurately at the individual package level.
 - **Smart CI capabilities**: Commands like `uni:run` allow you to execute scripts (e.g., tests or linters) recursively up the dependency tree, ensuring that changes in a base package don't break downstream dependents without having to run tests for the entire monorepo.
-
-In the root folder, you need to place a `composer.json` file.
-Since this file acts merely as a monorepo definition rather than a standard package, it must include `"type": "monorepo"`. Standard package fields like `name`, `version`, and `require` will be ignored and are not required.
-Its primary purpose is to define the `repositories`—the paths where your local packages are located.
-**Important**: Each of these local packages must use semantic versioning by including a `"version"` field in its own `composer.json` file (e.g., `"version": "1.0.0"`).
-```json
-{
-    "type": "monorepo",
-    "repositories": [
-        {
-            "type": "path",
-            "url": "./web"
-        },
-        {
-            "type": "path",
-            "url": "./worker"
-        },
-        {
-            "type": "path",
-            "url": "./packages/*"
-        }
-    ]
-}
-```
-> Optionally, other types of private repositories can be specified.
-
-Now any local package can include packages from these repositories.\
-No more need to describe the `path` repositories in each package.
-
-A shared folder `vendor` is created where all required packages are installed.\
-All dependent packages create symbolic links to them.
-
-This is to ensure that all dependencies use the same version.\
-And it speeds up installation.
-
-The used versions are fixed in the `composer.lock` file and will be used during installation.
-
-> When deploying an application, instead of symbolic links, you can copy the necessary packages.\
-Command [composer uni:build](#composer-unibuild)
-
-## Installation
-
-Compatible with `composer` version `2.3` or later.
-Currently does not work on `windows` operating system.
-The plugin must be installed globally.
-```bash
-# Optional: Pre-approve the plugin to avoid interactive prompts in CI/CD environments
-composer global config allow-plugins.steady-ua/unicorn true
-
-composer global require steady-ua/unicorn
-```
-
-> **Note for Composer 2.8+**: If you frequently run commands inside monorepo subdirectories that lack their own `composer.json`, Composer may prompt you with `"No composer.json in current directory, do you want to use the one at /path/to/parent?"`. You can disable this prompt and default to the global installation by running:
-> ```bash
-> composer config -g use-parent-dir false
-> ```
-
-## Usage
-
-After creating the root `composer.json` file, just use `composer` as usual.
+- **Distribution and Release**: Solves common monorepo deployment issues.\
+ The `uni:build` command extracts an independent, ready-to-run application with only its strictly required dependencies, making it perfect for Docker builds or direct deployment without dragging the entire monorepo along. \
+ Additionally, the `uni:split` command automates the publishing of local packages to separate, read-only repositories. This allows external projects outside the monorepo to easily require your shared packages via standard Composer installations.
 
 ## Documentation
 
@@ -115,23 +57,4 @@ For a detailed guide on how to work with Unicorn, check out the [docs/](./docs) 
 - [Getting Started](./docs/01-getting-started.md)
 - [Development Workflow](./docs/02-workflow.md)
 - [Commands Reference](./docs/03-commands.md)
-
-The root `composer.lock` file is recommended to be kept under a version control system (eg GIT).
-The root `vendor` directory, like package `vendor` directories, is recommended to be excluded.
-The generated package-level `composer.lock` files should also be excluded.
-
-If a version conflict occurs when including a dependent package, an error will be displayed.
-
-Use next commands to solve problems.
-
-## Commands & Configuration
-
-The `unicorn` plugin provides many commands for interacting with your monorepo, such as:
-- `uni:install` / `uni:update` - Manage dependencies across all packages.
-- `uni:run` - Execute scripts recursively.
-- `uni:doctor` - Diagnose the state of the monorepo and detect issues (like orphaned dependencies or invalid `composer.json` files).
-- `uni:server` - Visually explore the dependency graph.
-
-For the full list of commands and their options, see the **[Commands Reference](./docs/03-commands.md)**.
-
-For details on the root `composer.json` schema (including `build-install-options` and `post-update-scripts`), see the **[Getting Started Guide](./docs/01-getting-started.md)**.
+- [Monorepo Split Guide](./docs/04-monorepo-split.md)

@@ -22,6 +22,7 @@ class ShowCommand extends \Composer\Command\ShowCommand
     {
         parent::configure();
         $this->setName('uni:show');
+        $this->setAliases(['uni:info']);
         $this->setHelp($this->getHelp() . <<<EOT
 
 

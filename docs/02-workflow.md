@@ -2,6 +2,15 @@
 
 Working in a Unicorn monorepo is designed to feel as close to standard Composer development as possible, but with superpowers to manage cross-package dependencies.
 
+## 0. Initialization and Syncing
+
+Whether you are setting up the project for the first time or pulling new code changes from your repository (e.g., after `git pull`), you must rebuild the local dependency symlinks and autoloader. To do this, simply run:
+
+```bash
+composer uni:install
+```
+*(Alias: `composer uni:i`)*
+
 ## 1. Requiring Dependencies
 
 ### External Libraries
@@ -35,6 +44,11 @@ This command updates the required package across *all* dependent packages in the
 composer uni:update "guzzlehttp/guzzle ^7.0"
 ```
 
+> **Tip**: If it is not possible to update to the required version (e.g., due to dependency conflicts), you can analyze the blocking dependencies using the `uni:why-not` command:
+> ```bash
+> composer uni:why-not "guzzlehttp/guzzle ^7.0"
+> ```
+
 ## 3. Bumping Local Package Versions
 
 Local packages must have a semantic version defined in their `composer.json` (e.g., `"version": "1.0.0"`). Dependent packages can then require them using version constraints, such as `"require": { "my-org/logger": "^1.0" }`.
@@ -54,6 +68,11 @@ This command will:
 5. Execute any scripts defined in `post-update-scripts` for the affected packages.
 6. Automatically roll back all version changes if any installation or script execution errors occur.
 
+> **Tip**: If a version bump fails (e.g., due to conflicts in dependent packages), you can use the `uni:why` command to see all packages that depend on the current package and might be blocking the update:
+> ```bash
+> composer uni:why -t
+> ```
+
 ## 4. Visualizing the Architecture
 
 As monorepos grow, it becomes difficult to understand which package depends on which. Unicorn ships with a built-in interactive visualizer.
@@ -62,25 +81,26 @@ From the root of your project, run:
 ```bash
 composer uni:server
 ```
-This spins up a local HTTP server (default port `8067`). Open the provided link in your browser to explore your dependency graph interactively via a Mermaid diagram. You can click on packages to navigate up and down the dependency tree.
+After running the command, a link will appear in your console. Open this link in your browser to explore your dependency graph interactively. For full details and configuration options, see the [`uni:server` documentation in the Commands Reference](03-commands.md#composer-uniserver).
 
 ## 5. Smart Continuous Integration (CI)
 
 When you make a change in a low-level package (like `logger`), you need to ensure you haven't broken any packages that depend on it (like `database` or `web`). Running the entire test suite for the monorepo can take hours.
 
-Unicorn provides a "Smart CI" command to run scripts recursively up the dependency tree:
-
+While you use the standard Composer command to run tests for the **current** package:
 ```bash
 cd packages/logger
+composer run test
+```
+
+After modifying your code, you can easily run tests for the packages that depend on the current package using:
+```bash
 composer uni:run test
 ```
 
-This will run the `test` script defined in the `composer.json` for:
-- The `logger` package itself.
-- Any packages that require `logger` (e.g., `database`).
-- Any packages that require `database` (e.g., `web`).
+This approach guarantees that downstream dependents are tested against your changes without the overhead of running unrelated test suites in the monorepo.
 
-This approach guarantees that downstream dependents are tested against your changes without the overhead of running unrelated test suites.
+For full details on dependency tree resolution and additional options (such as recursive execution), see the [`uni:run` documentation in the Commands Reference](03-commands.md#composer-unirun-options-script).
 
 ## 6. Building for Production
 
@@ -88,6 +108,10 @@ When it's time to deploy an application (e.g., `apps/web`) to a production serve
 
 Use the build command:
 ```bash
-composer uni:build ./apps/web ./dist/web
+composer uni:build my-org/web ./dist/web
 ```
-This command will copy the `web` application into the `./dist/web` directory and install all of its required dependencies (both local and external) as hard files, generating a fresh, production-ready `vendor/autoload.php` optimized for deployment.
+The first parameter (`my-org/web`) is the name of the package you want to build, and the second (`./dist/web`) is the target directory where the build will be placed.
+
+This command will copy the application into the target directory and automatically perform a `composer install` there. This ensures all required dependencies (both local and external) are installed as actual files rather than symlinks, generating a fresh, production-ready `vendor/autoload.php`.
+
+You can customize the parameters passed to this installation process (such as `--no-dev`) using the `build-install-options` setting in your root `composer.json` (see the [Getting Started guide](./01-getting-started.md#additional-configuration-options)).

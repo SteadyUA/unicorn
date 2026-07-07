@@ -23,6 +23,7 @@ class InstallCommand extends BaseCommand
     {
         $this
             ->setName('uni:install')
+            ->setAliases(['uni:i'])
             ->setDescription('Install monorepo packages.')
             ->setDefinition([
                 new InputArgument(
