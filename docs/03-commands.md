@@ -56,7 +56,7 @@ For example, given the dependency chain: `application` -> `package A` -> `packag
 
 ---
 
-### `composer uni:build [options] [--] <package> <directory>`
+### `composer uni:build [options] <package> <directory>`
 Prepares a package for production deployment.
 - **`<package>`**: The name of the local package you want to build (e.g., `my-org/web`).
 - **`<directory>`**: The target directory where the built application will be placed (e.g., `./dist/web`).
@@ -118,7 +118,7 @@ When the server is launched from within a local package directory, it focuses on
 
 The interactive diagram shows only *direct* dependencies by default. For deeper analysis, you can click the following links:
 - **Dependents from above**: Renders a full dependency tree from the top down to the target package.
-- **Requirements to the very**: Renders a diagram of all dependencies all the way down from the target package.
+- **Requirements to the very bottom**: Renders a diagram of all dependencies all the way down from the target package.
 
 ---
 

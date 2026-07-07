@@ -115,3 +115,5 @@ The first parameter (`my-org/web`) is the name of the package you want to build,
 This command will copy the application into the target directory and automatically perform a `composer install` there. This ensures all required dependencies (both local and external) are installed as actual files rather than symlinks, generating a fresh, production-ready `vendor/autoload.php`.
 
 You can customize the parameters passed to this installation process (such as `--no-dev`) using the `build-install-options` setting in your root `composer.json` (see the [Getting Started guide](./01-getting-started.md#additional-configuration-options)).
+
+These and other commands are described in [Commands Reference](./03-commands.md).

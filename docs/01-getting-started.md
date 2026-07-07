@@ -95,6 +95,13 @@ Unicorn will:
 - The root `vendor` directory, just like package-level `vendor` directories, **should be excluded** (added to `.gitignore`).
 - The generated package-level `composer.lock` files **should also be excluded**.
 
+**Example .gitignore:**
+```text
+vendor/
+composer.lock
+!/composer.lock
+```
+
 ## Troubleshooting
 
 If initialization fails with **Initialization error**, it usually means one of your local packages has an invalid `composer.json` file. Run `composer uni:doctor` to diagnose the exact state of your monorepo and pinpoint the issue.
